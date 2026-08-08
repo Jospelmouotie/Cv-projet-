@@ -1,0 +1,6 @@
+{
+  "name": "MYCV BUILDER",
+  "description": "Créateur et éditeur de CV professionnel type Canva avec modèles, drag & drop, aperçu en temps réel, paiement Mobile Money et export PDF.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
