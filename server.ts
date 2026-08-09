@@ -498,6 +498,131 @@ app.post('/api/admin/paiement/:id/rejeter', (req, res) => {
 });
 
 // -------------------------------------------------------------
+// AI SPELLCHECK & GRAMMAR CORRECTION ENDPOINTS (GEMINI API)
+// -------------------------------------------------------------
+
+import { GoogleGenAI } from '@google/genai';
+
+let geminiAi: GoogleGenAI | null = null;
+function getGemini(): GoogleGenAI | null {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) return null;
+  if (!geminiAi) {
+    geminiAi = new GoogleGenAI({ apiKey });
+  }
+  return geminiAi;
+}
+
+app.post('/api/correction', async (req, res) => {
+  const { texte, langue = 'fr' } = req.body;
+
+  if (!texte || typeof texte !== 'string' || texte.trim().length === 0) {
+    return res.json({ erreurs: [] });
+  }
+
+  const ai = getGemini();
+
+  if (!ai) {
+    return res.json({
+      erreurs: [],
+      warning: 'API Key Gemini non configurée sur le serveur.'
+    });
+  }
+
+  try {
+    const prompt = `Tu es un expert en révision de CV professionnel en langue ${langue === 'en' ? 'Anglaise' : 'Française'}.
+Analyse le texte suivant et identifie TOUTES les fautes d'orthographe, de grammaire, de conjugaison, d'accord et de ponctuation.
+Retourne EXCLUSIVEMENT un objet JSON valide au format exact suivant:
+{
+  "erreurs": [
+    {
+      "motOriginal": "mot ou expression fautive",
+      "correction": "mot ou expression corrigée",
+      "explication": "brève explication claire",
+      "type": "orthographe"
+    }
+  ]
+}
+
+Si le texte n'a aucune faute, retourne {"erreurs": []}.
+Ne rajoute aucun texte avant ou après le JSON.
+
+Texte à analyser:
+"${texte.replace(/"/g, '\\"')}"`;
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: prompt,
+      config: {
+        responseMimeType: 'application/json'
+      }
+    });
+
+    const responseText = response.text || '{}';
+    const parsed = JSON.parse(responseText);
+
+    res.json({
+      erreurs: Array.isArray(parsed.erreurs) ? parsed.erreurs : []
+    });
+  } catch (err: any) {
+    console.error('Gemini spellcheck API error:', err);
+    res.json({
+      erreurs: [],
+      warning: 'Erreur lors de la vérification orthographique par IA.'
+    });
+  }
+});
+
+app.post('/api/correction/cv', async (req, res) => {
+  const { cv } = req.body;
+  if (!cv || !cv.sections) {
+    return res.status(400).json({ error: 'CV invalide' });
+  }
+
+  const ai = getGemini();
+  if (!ai) {
+    return res.json({
+      correctionsGlobales: [],
+      warning: 'API Key Gemini non configurée.'
+    });
+  }
+
+  try {
+    const prompt = `Tu es un consultant en recrutement et expert en rédaction de CV.
+Examine la structure et les textes de ce CV au format JSON et suggère des corrections orthographiques, grammaticales et d'amélioration d'impact professionnel.
+
+Retourne un JSON avec cette structure:
+{
+  "correctionsGlobales": [
+    {
+      "sectionId": "id de la section",
+      "champ": "nom du champ",
+      "texteOriginal": "texte original",
+      "texteCorrige": "texte corrigé",
+      "explication": "explication"
+    }
+  ]
+}
+
+CV: ${JSON.stringify(cv).slice(0, 8000)}`;
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: prompt,
+      config: {
+        responseMimeType: 'application/json'
+      }
+    });
+
+    const parsed = JSON.parse(response.text || '{}');
+    res.json(parsed);
+  } catch (err: any) {
+    console.error('Error correcting entire CV with Gemini:', err);
+    res.json({ correctionsGlobales: [], error: err.message });
+  }
+});
+
+// -------------------------------------------------------------
 // VITE INTEGRATION & SERVER STARTUP
 // -------------------------------------------------------------
 

@@ -1,7 +1,8 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { CV, Section, ProfilContenu, ExperienceItem, FormationItem, CompetenceItem, LangueItem, PersonnaliseeContenu } from '../types';
-import { CV_TEMPLATES } from '../data/templates';
-import { Mail, Phone, MapPin, Globe, ArrowUp, ArrowDown, User, Briefcase, GraduationCap, CheckCircle, Palette, Minus, Plus } from 'lucide-react';
+import { CV_TEMPLATES, FONT_OPTIONS } from '../data/templates';
+import { getAccentShades } from '../utils/colorUtils';
+import { Mail, Phone, MapPin, Globe, ArrowUp, ArrowDown, User, Briefcase, GraduationCap, CheckCircle, Palette, Minus, Plus, Lock, ShieldAlert } from 'lucide-react';
 
 interface CVPreviewProps {
   cv: CV;
@@ -26,15 +27,44 @@ export const CVPreview: React.FC<CVPreviewProps> = ({
 }) => {
   const template = CV_TEMPLATES.find(t => t.id === cv.templateId) || CV_TEMPLATES[0];
   const accent = cv.couleurAccent || template.defaultAccent || '#006666';
-  const fontFamily = cv.police || template.defaultFont || 'Inter';
+  const shades = getAccentShades(accent, cv.couleurAccentSecondaire || template.defaultSecondaryAccent);
+  
+  // Font Family mapping
+  const selectedFontObj = FONT_OPTIONS.find(f => f.id === cv.police) || FONT_OPTIONS.find(f => f.id === template.defaultFont) || FONT_OPTIONS[0];
+  const fontCss = selectedFontObj ? selectedFontObj.family : (cv.police ? `${cv.police}, sans-serif` : 'Inter, sans-serif');
+  const fontFamily = fontCss;
 
-  // Anti-Screenshot Event Detection
+  // Dynamic TextStyle Object
+  const dynamicTextStyle: React.CSSProperties = {
+    fontFamily: fontCss,
+    ...(cv.taillePoliceValeur ? { fontSize: `${cv.taillePoliceValeur}px` } : {}),
+    ...(cv.hauteurLigneValeur ? { lineHeight: cv.hauteurLigneValeur } : {})
+  };
+
+  // Dynamic Column Widths & Margins
+  const leftColWidthPercent = cv.largeurColonneGauche ? cv.largeurColonneGauche : 33;
+  const rightColWidthPercent = 100 - leftColWidthPercent;
+
+  const leftColPaddingStyle: React.CSSProperties = cv.margeColonneGauche !== undefined ? {
+    paddingLeft: `${cv.margeColonneGauche}px`,
+    paddingRight: `${cv.margeColonneGauche}px`
+  } : {};
+
+  const rightColPaddingStyle: React.CSSProperties = cv.margeColonneDroite !== undefined ? {
+    paddingLeft: `${cv.margeColonneDroite}px`,
+    paddingRight: `${cv.margeColonneDroite}px`
+  } : {};
+
+  const [toastNotice, setToastNotice] = useState<string | null>(null);
+
+  // Anti-Screenshot Event Detection with non-intrusive in-app banner
   useEffect(() => {
     if (!interactivePreview || cv.statutPaiement === 'PAYE') return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'PrintScreen' || (e.metaKey && e.shiftKey && (e.key === '3' || e.key === '4' || e.key === '5'))) {
-        alert("🔒 Capture d'écran détectée ! Cet aperçu est filigrané et protégé. Effectuez un paiement de 500 FCFA via Orange Money/MTN pour télécharger votre CV propre en PDF HD sans filigrane.");
+        setToastNotice("🔒 Capture d'écran détectée ! Cet aperçu est filigrané. Téléchargez le PDF HD sans filigrane après validation.");
+        setTimeout(() => setToastNotice(null), 5000);
       }
     };
 
@@ -100,7 +130,7 @@ export const CVPreview: React.FC<CVPreviewProps> = ({
     if (!interactivePreview) return null;
 
     return (
-      <div className="absolute top-2 right-2 z-40 flex items-center gap-1.5 bg-slate-900/90 text-white p-1.5 rounded-xl shadow-xl backdrop-blur-md border border-slate-700/80 text-[11px] font-bold">
+      <div className="print:hidden absolute top-2 right-2 z-40 flex items-center gap-1.5 bg-slate-900/90 text-white p-1.5 rounded-xl shadow-xl backdrop-blur-md border border-slate-700/80 text-[11px] font-bold">
         {/* Color Touch Picker */}
         <div className="relative flex items-center gap-1 px-1.5 py-0.5 bg-slate-800 rounded-lg hover:bg-slate-700 transition-colors">
           <Palette className="w-3.5 h-3.5 text-amber-400" />
@@ -167,10 +197,21 @@ export const CVPreview: React.FC<CVPreviewProps> = ({
 
     return (
       <div className="absolute inset-0 z-50 pointer-events-none select-none overflow-hidden flex flex-col justify-between p-4">
+        {/* Toast Notification Banner if screenshot triggered */}
+        {toastNotice && (
+          <div className="absolute top-12 left-4 right-4 z-50 flex justify-center animate-bounce">
+            <div className="bg-slate-900 text-amber-300 border border-amber-500 text-xs font-bold px-4 py-2 rounded-xl shadow-2xl flex items-center gap-2 backdrop-blur-md">
+              <ShieldAlert className="w-4 h-4 text-amber-400 shrink-0" />
+              <span>{toastNotice}</span>
+            </div>
+          </div>
+        )}
+
         {/* Top Warning Badge */}
         <div className="flex justify-center">
           <div className="bg-amber-500/95 text-slate-950 text-[10px] font-black px-3 py-1 rounded-full shadow-lg border border-amber-300 tracking-wider flex items-center gap-1.5 backdrop-blur-xs">
-            🔒 APERÇU PROTÉGÉ — NE PAS CAPTURER • MYCV BUILDER
+            <Lock className="w-3 h-3" />
+            <span>APERÇU PROTÉGÉ — EXPORT PDF HD PROPRE DISPONIBLE</span>
           </div>
         </div>
 
@@ -443,8 +484,8 @@ export const CVPreview: React.FC<CVPreviewProps> = ({
     return (
       <div
         id={id}
-        className={`bg-white text-slate-800 w-full aspect-[210/297] shadow-xl rounded-none sm:rounded-lg overflow-hidden border border-slate-200 relative select-none flex flex-col ${fontSizeClasses} ${lineHeightClasses} ${letterSpacingClasses}`}
-        style={{ fontFamily: `"${fontFamily}", sans-serif` }}
+        className={`bg-white text-slate-800 w-full min-h-[297mm] h-auto shadow-xl rounded-none sm:rounded-lg border border-slate-200 relative select-none flex flex-col ${fontSizeClasses} ${lineHeightClasses} ${letterSpacingClasses}`}
+        style={{ fontFamily: fontCss, ...dynamicTextStyle }}
       >
         {renderWatermarkOverlay()}
         {renderInteractiveToolbar()}
@@ -471,7 +512,7 @@ export const CVPreview: React.FC<CVPreviewProps> = ({
         </div>
 
         {/* Body Content 2 Columns */}
-        <div className="flex flex-1 overflow-hidden">
+        <div className="flex flex-1">
           {/* Left Column (Light Blue) */}
           <div className="w-[36%] bg-[#E6F0F2] p-6 space-y-5 border-r border-slate-200 text-slate-800 shrink-0">
             {/* CONTACT */}
@@ -502,7 +543,7 @@ export const CVPreview: React.FC<CVPreviewProps> = ({
           </div>
 
           {/* Right Column (White) */}
-          <div className="w-[64%] p-6 space-y-6 bg-white overflow-hidden">
+          <div className="w-[64%] p-6 space-y-6 bg-white">
             {/* DYNAMIC MAIN COLUMN SECTIONS (Preserving User Order & Column selection) */}
             {renderDynamicSectionGroup(getSectionsForColumn('principale'), false)}
           </div>
@@ -518,8 +559,8 @@ export const CVPreview: React.FC<CVPreviewProps> = ({
     return (
       <div
         id={id}
-        className={`bg-[#381A3C] text-white w-full aspect-[210/297] shadow-xl rounded-none sm:rounded-lg overflow-hidden border border-slate-800 relative select-none flex flex-col justify-between ${fontSizeClasses} ${lineHeightClasses} ${letterSpacingClasses}`}
-        style={{ fontFamily: `"${fontFamily}", "Playfair Display", Georgia, serif` }}
+        className={`bg-[#381A3C] text-white w-full min-h-[297mm] h-auto shadow-xl rounded-none sm:rounded-lg border border-slate-800 relative select-none flex flex-col justify-between ${fontSizeClasses} ${lineHeightClasses} ${letterSpacingClasses}`}
+        style={{ fontFamily: fontCss, ...dynamicTextStyle }}
       >
         {renderWatermarkOverlay()}
         {renderInteractiveToolbar()}
@@ -547,7 +588,7 @@ export const CVPreview: React.FC<CVPreviewProps> = ({
         </div>
 
         {/* Body Content 2 Equal Columns */}
-        <div className="px-8 py-4 grid grid-cols-2 gap-8 overflow-hidden font-sans">
+        <div className="px-8 py-4 grid grid-cols-2 gap-8 font-sans">
           {/* Left Column */}
           <div className="space-y-5 border-r border-white/20 pr-6">
             {renderDynamicSectionGroup(getSectionsForColumn('gauche'), true, "text-sm font-bold font-serif border-b border-white/30 pb-1 text-white")}
@@ -574,8 +615,8 @@ export const CVPreview: React.FC<CVPreviewProps> = ({
     return (
       <div
         id={id}
-        className={`bg-white text-slate-800 w-full aspect-[210/297] shadow-xl rounded-none sm:rounded-lg overflow-hidden border border-slate-200 relative select-none flex ${fontSizeClasses} ${lineHeightClasses} ${letterSpacingClasses}`}
-        style={{ fontFamily: `"${fontFamily}", sans-serif` }}
+        className={`bg-white text-slate-800 w-full min-h-[297mm] h-auto shadow-xl rounded-none sm:rounded-lg border border-slate-200 relative select-none flex ${fontSizeClasses} ${lineHeightClasses} ${letterSpacingClasses}`}
+        style={{ fontFamily: fontCss, ...dynamicTextStyle }}
       >
         {renderWatermarkOverlay()}
         {renderInteractiveToolbar()}
@@ -639,8 +680,8 @@ export const CVPreview: React.FC<CVPreviewProps> = ({
     return (
       <div
         id={id}
-        className={`bg-white text-slate-800 w-full aspect-[210/297] shadow-xl rounded-none sm:rounded-lg overflow-hidden border-4 border-slate-300 p-8 relative select-none flex flex-col justify-between ${fontSizeClasses} ${lineHeightClasses} ${letterSpacingClasses}`}
-        style={{ fontFamily: `"${fontFamily}", sans-serif` }}
+        className={`bg-white text-slate-800 w-full min-h-[297mm] h-auto shadow-xl rounded-none sm:rounded-lg border-4 border-slate-300 p-8 relative select-none flex flex-col justify-between ${fontSizeClasses} ${lineHeightClasses} ${letterSpacingClasses}`}
+        style={{ fontFamily: fontCss, ...dynamicTextStyle }}
       >
         {renderWatermarkOverlay()}
         {renderInteractiveToolbar()}
@@ -681,8 +722,8 @@ export const CVPreview: React.FC<CVPreviewProps> = ({
     return (
       <div
         id={id}
-        className={`bg-[#EDF2F0] text-slate-800 w-full aspect-[210/297] shadow-xl rounded-none sm:rounded-lg overflow-hidden border border-slate-200 relative select-none flex flex-col justify-between ${fontSizeClasses} ${lineHeightClasses} ${letterSpacingClasses}`}
-        style={{ fontFamily: `"${fontFamily}", Georgia, serif` }}
+        className={`bg-[#EDF2F0] text-slate-800 w-full min-h-[297mm] h-auto shadow-xl rounded-none sm:rounded-lg border border-slate-200 relative select-none flex flex-col justify-between ${fontSizeClasses} ${lineHeightClasses} ${letterSpacingClasses}`}
+        style={{ fontFamily: fontCss, ...dynamicTextStyle }}
       >
         {renderWatermarkOverlay()}
         {renderInteractiveToolbar()}
@@ -757,8 +798,8 @@ export const CVPreview: React.FC<CVPreviewProps> = ({
     return (
       <div
         id={id}
-        className={`bg-white text-slate-800 w-full aspect-[210/297] shadow-xl rounded-none sm:rounded-lg overflow-hidden border border-slate-200 relative select-none flex flex-col ${fontSizeClasses} ${lineHeightClasses} ${letterSpacingClasses}`}
-        style={{ fontFamily: `"${fontFamily}", sans-serif` }}
+        className={`bg-white text-slate-800 w-full min-h-[297mm] h-auto shadow-xl rounded-none sm:rounded-lg border border-slate-200 relative select-none flex flex-col ${fontSizeClasses} ${lineHeightClasses} ${letterSpacingClasses}`}
+        style={{ fontFamily: fontCss, ...dynamicTextStyle }}
       >
         {renderWatermarkOverlay()}
         {renderInteractiveToolbar()}
@@ -814,8 +855,8 @@ export const CVPreview: React.FC<CVPreviewProps> = ({
     return (
       <div
         id={id}
-        className={`bg-white text-slate-800 w-full aspect-[210/297] shadow-xl rounded-none sm:rounded-lg overflow-hidden border border-slate-200 relative select-none flex ${fontSizeClasses} ${lineHeightClasses} ${letterSpacingClasses}`}
-        style={{ fontFamily: `"${fontFamily}", "Playfair Display", Georgia, serif` }}
+        className={`bg-white text-slate-800 w-full min-h-[297mm] h-auto shadow-xl rounded-none sm:rounded-lg border border-slate-200 relative select-none flex ${fontSizeClasses} ${lineHeightClasses} ${letterSpacingClasses}`}
+        style={{ fontFamily: fontCss, ...dynamicTextStyle }}
       >
         {renderWatermarkOverlay()}
         {renderInteractiveToolbar()}
@@ -866,8 +907,8 @@ export const CVPreview: React.FC<CVPreviewProps> = ({
     return (
       <div
         id={id}
-        className={`bg-white text-slate-800 w-full aspect-[210/297] shadow-xl rounded-none sm:rounded-lg overflow-hidden border border-slate-200 relative select-none flex ${fontSizeClasses} ${lineHeightClasses} ${letterSpacingClasses}`}
-        style={{ fontFamily: `"${fontFamily}", sans-serif` }}
+        className={`bg-white text-slate-800 w-full min-h-[297mm] h-auto shadow-xl rounded-none sm:rounded-lg border border-slate-200 relative select-none flex ${fontSizeClasses} ${lineHeightClasses} ${letterSpacingClasses}`}
+        style={{ fontFamily: fontCss, ...dynamicTextStyle }}
       >
         {renderWatermarkOverlay()}
         {renderInteractiveToolbar()}
@@ -925,8 +966,8 @@ export const CVPreview: React.FC<CVPreviewProps> = ({
     return (
       <div
         id={id}
-        className={`bg-[#F8FAFC] text-slate-800 w-full aspect-[210/297] shadow-xl rounded-none sm:rounded-lg overflow-hidden border border-slate-200 relative select-none flex flex-col ${fontSizeClasses} ${lineHeightClasses} ${letterSpacingClasses}`}
-        style={{ fontFamily: `"${fontFamily}", sans-serif` }}
+        className={`bg-[#F8FAFC] text-slate-800 w-full min-h-[297mm] h-auto shadow-xl rounded-none sm:rounded-lg border border-slate-200 relative select-none flex flex-col ${fontSizeClasses} ${lineHeightClasses} ${letterSpacingClasses}`}
+        style={{ fontFamily: fontCss, ...dynamicTextStyle }}
       >
         {renderWatermarkOverlay()}
         {renderInteractiveToolbar()}
@@ -1028,8 +1069,8 @@ export const CVPreview: React.FC<CVPreviewProps> = ({
     return (
       <div
         id={id}
-        className={`bg-white text-slate-900 w-full aspect-[210/297] shadow-xl rounded-none sm:rounded-lg overflow-hidden border border-slate-300 relative select-none flex ${fontSizeClasses} ${lineHeightClasses} ${letterSpacingClasses}`}
-        style={{ fontFamily: `"${fontFamily}", "Poppins", sans-serif` }}
+        className={`bg-white text-slate-900 w-full min-h-[297mm] h-auto shadow-xl rounded-none sm:rounded-lg border border-slate-300 relative select-none flex ${fontSizeClasses} ${lineHeightClasses} ${letterSpacingClasses}`}
+        style={{ fontFamily: fontCss, ...dynamicTextStyle }}
       >
         {renderWatermarkOverlay()}
         {renderInteractiveToolbar()}
@@ -1089,7 +1130,7 @@ export const CVPreview: React.FC<CVPreviewProps> = ({
     return (
       <div
         id={id}
-        className={`bg-white text-slate-900 w-full aspect-[210/297] shadow-xl rounded-none sm:rounded-lg overflow-hidden border-2 border-[#D4AF37] relative select-none flex flex-col ${fontSizeClasses} ${lineHeightClasses} ${letterSpacingClasses}`}
+        className={`bg-white text-slate-900 w-full min-h-[297mm] h-auto shadow-xl rounded-none sm:rounded-lg border-2 border-[#D4AF37] relative select-none flex flex-col ${fontSizeClasses} ${lineHeightClasses} ${letterSpacingClasses}`}
         style={{ fontFamily: `"${fontFamily}", Georgia, serif` }}
       >
         {renderWatermarkOverlay()}
@@ -1134,8 +1175,8 @@ export const CVPreview: React.FC<CVPreviewProps> = ({
     return (
       <div
         id={id}
-        className={`bg-[#F0FDF4] text-slate-800 w-full aspect-[210/297] shadow-xl rounded-none sm:rounded-lg overflow-hidden border border-emerald-200 relative select-none flex flex-col p-8 space-y-6 ${fontSizeClasses} ${lineHeightClasses} ${letterSpacingClasses}`}
-        style={{ fontFamily: `"${fontFamily}", Arial, sans-serif` }}
+        className={`bg-[#F0FDF4] text-slate-800 w-full min-h-[297mm] h-auto shadow-xl rounded-none sm:rounded-lg border border-emerald-200 relative select-none flex flex-col p-8 space-y-6 ${fontSizeClasses} ${lineHeightClasses} ${letterSpacingClasses}`}
+        style={{ fontFamily: fontCss, ...dynamicTextStyle }}
       >
         {renderWatermarkOverlay()}
         {renderInteractiveToolbar()}
@@ -1174,8 +1215,8 @@ export const CVPreview: React.FC<CVPreviewProps> = ({
     return (
       <div
         id={id}
-        className={`bg-white text-slate-900 w-full aspect-[210/297] shadow-xl rounded-none sm:rounded-lg overflow-hidden border border-orange-200 relative select-none flex flex-col ${fontSizeClasses} ${lineHeightClasses} ${letterSpacingClasses}`}
-        style={{ fontFamily: `"${fontFamily}", Montserrat, sans-serif` }}
+        className={`bg-white text-slate-900 w-full min-h-[297mm] h-auto shadow-xl rounded-none sm:rounded-lg border border-orange-200 relative select-none flex flex-col ${fontSizeClasses} ${lineHeightClasses} ${letterSpacingClasses}`}
+        style={{ fontFamily: fontCss, ...dynamicTextStyle }}
       >
         {renderWatermarkOverlay()}
         {renderInteractiveToolbar()}
@@ -1218,8 +1259,8 @@ export const CVPreview: React.FC<CVPreviewProps> = ({
     return (
       <div
         id={id}
-        className={`bg-white text-slate-800 w-full aspect-[210/297] shadow-xl rounded-none sm:rounded-lg overflow-hidden border border-slate-300 relative select-none flex ${fontSizeClasses} ${lineHeightClasses} ${letterSpacingClasses}`}
-        style={{ fontFamily: `"${fontFamily}", sans-serif` }}
+        className={`bg-white text-slate-800 w-full min-h-[297mm] h-auto shadow-xl rounded-none sm:rounded-lg border border-slate-300 relative select-none flex ${fontSizeClasses} ${lineHeightClasses} ${letterSpacingClasses}`}
+        style={{ fontFamily: fontCss, ...dynamicTextStyle }}
       >
         {renderWatermarkOverlay()}
         {/* Left Teal Sidebar */}
@@ -1261,8 +1302,8 @@ export const CVPreview: React.FC<CVPreviewProps> = ({
     return (
       <div
         id={id}
-        className={`bg-white text-slate-800 w-full aspect-[210/297] shadow-xl rounded-none sm:rounded-lg overflow-hidden border border-slate-300 relative select-none flex ${fontSizeClasses} ${lineHeightClasses} ${letterSpacingClasses}`}
-        style={{ fontFamily: `"${fontFamily}", sans-serif` }}
+        className={`bg-white text-slate-800 w-full min-h-[297mm] h-auto shadow-xl rounded-none sm:rounded-lg border border-slate-300 relative select-none flex ${fontSizeClasses} ${lineHeightClasses} ${letterSpacingClasses}`}
+        style={{ fontFamily: fontCss, ...dynamicTextStyle }}
       >
         {renderWatermarkOverlay()}
         {/* Left Dark Navy Column */}
@@ -1344,8 +1385,8 @@ export const CVPreview: React.FC<CVPreviewProps> = ({
     return (
       <div
         id={id}
-        className={`bg-white text-slate-800 w-full aspect-[210/297] shadow-xl rounded-none sm:rounded-lg overflow-hidden border border-slate-300 relative select-none flex ${fontSizeClasses} ${lineHeightClasses} ${letterSpacingClasses}`}
-        style={{ fontFamily: `"${fontFamily}", sans-serif` }}
+        className={`bg-white text-slate-800 w-full min-h-[297mm] h-auto shadow-xl rounded-none sm:rounded-lg border border-slate-300 relative select-none flex ${fontSizeClasses} ${lineHeightClasses} ${letterSpacingClasses}`}
+        style={{ fontFamily: fontCss, ...dynamicTextStyle }}
       >
         {renderWatermarkOverlay()}
         {/* Left Dark Column */}
@@ -1417,8 +1458,8 @@ export const CVPreview: React.FC<CVPreviewProps> = ({
     return (
       <div
         id={id}
-        className={`bg-white text-slate-800 w-full aspect-[210/297] shadow-xl rounded-none sm:rounded-lg overflow-hidden border border-slate-300 relative select-none flex flex-col ${fontSizeClasses} ${lineHeightClasses} ${letterSpacingClasses}`}
-        style={{ fontFamily: `"${fontFamily}", sans-serif` }}
+        className={`bg-white text-slate-800 w-full min-h-[297mm] h-auto shadow-xl rounded-none sm:rounded-lg border border-slate-300 relative select-none flex flex-col ${fontSizeClasses} ${lineHeightClasses} ${letterSpacingClasses}`}
+        style={{ fontFamily: fontCss, ...dynamicTextStyle }}
       >
         {renderWatermarkOverlay()}
         {/* Top Header Banner */}
@@ -1500,8 +1541,8 @@ export const CVPreview: React.FC<CVPreviewProps> = ({
     return (
       <div
         id={id}
-        className={`bg-white text-slate-800 w-full aspect-[210/297] shadow-xl rounded-none sm:rounded-lg overflow-hidden border border-slate-300 relative select-none flex flex-col p-8 ${fontSizeClasses} ${lineHeightClasses} ${letterSpacingClasses}`}
-        style={{ fontFamily: `"${fontFamily}", sans-serif` }}
+        className={`bg-white text-slate-800 w-full min-h-[297mm] h-auto shadow-xl rounded-none sm:rounded-lg border border-slate-300 relative select-none flex flex-col p-8 ${fontSizeClasses} ${lineHeightClasses} ${letterSpacingClasses}`}
+        style={{ fontFamily: fontCss, ...dynamicTextStyle }}
       >
         {renderWatermarkOverlay()}
         {/* Decorative Green Accent Bar */}
@@ -1587,47 +1628,154 @@ export const CVPreview: React.FC<CVPreviewProps> = ({
   }
 
   /* ==================================================================
-   * MODEL 14 & 15 / DEFAULT FALLBACK
+   * MODEL 14: NAVY & GOLD EXECUTIVE (BLEU MARINE & LIGNES DORÉES)
+   * ================================================================== */
+  if (layoutType === 'navy-gold-executive' || cv.templateId === 'modele-14') {
+    return (
+      <div
+        id={id}
+        className={`bg-white text-slate-800 w-full min-h-[297mm] h-auto shadow-xl rounded-none sm:rounded-lg border border-slate-300 relative select-none flex ${fontSizeClasses} ${lineHeightClasses} ${letterSpacingClasses}`}
+        style={{ fontFamily: fontCss, ...dynamicTextStyle }}
+      >
+        {renderWatermarkOverlay()}
+        {renderInteractiveToolbar()}
+
+        {/* Left Navy Column */}
+        <div
+          className="w-[36%] text-white p-6 space-y-6 shrink-0 flex flex-col justify-between border-r-2 border-[#D4AF37]"
+          style={{ backgroundColor: shades.primary }}
+        >
+          <div className="space-y-6">
+            {showPhoto && (
+              <div
+                className={`mx-auto border-2 border-[#D4AF37] overflow-hidden shadow-xl bg-slate-800 ${photoShapeClass}`}
+                style={photoSizeStyle || { width: '96px', height: '96px' }}
+              >
+                <img src={cv.photoUrl} alt="Portrait" className={`w-full h-full object-cover ${photoShapeClass}`} />
+              </div>
+            )}
+
+            <div className="text-center space-y-1 pb-2 border-b border-[#D4AF37]/50">
+              <h2 className="text-xs font-bold uppercase tracking-widest text-[#D4AF37]">Coordonnées</h2>
+            </div>
+
+            <div className="space-y-2 text-xs text-slate-200">
+              {profilSec?.email && <p className="truncate flex items-center gap-1.5"><Mail className="w-3.5 h-3.5 text-[#D4AF37] shrink-0" /><span className="truncate">{profilSec.email}</span></p>}
+              {profilSec?.telephone && <p className="flex items-center gap-1.5"><Phone className="w-3.5 h-3.5 text-[#D4AF37] shrink-0" /><span>{profilSec.telephone}</span></p>}
+              {profilSec?.adresse && <p className="flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5 text-[#D4AF37] shrink-0" /><span>{profilSec.adresse}</span></p>}
+              {profilSec?.linkedin && <p className="truncate flex items-center gap-1.5"><Globe className="w-3.5 h-3.5 text-[#D4AF37] shrink-0" /><span className="truncate">{profilSec.linkedin}</span></p>}
+            </div>
+
+            {renderDynamicSectionGroup(getSectionsForColumn('gauche'), true, "text-xs font-bold uppercase tracking-widest text-[#D4AF37] border-b border-[#D4AF37]/40 pb-1")}
+          </div>
+        </div>
+
+        {/* Right Main Column */}
+        <div className="w-[64%] p-8 space-y-6 bg-white overflow-hidden flex flex-col">
+          <div className="border-b-2 border-[#0F172A] pb-4">
+            <h1 className="text-2xl font-serif font-black text-[#0F172A] tracking-tight uppercase">{mainTitle}</h1>
+            <p className="text-xs font-serif font-bold text-[#D4AF37] uppercase tracking-widest mt-1">{subTitle}</p>
+          </div>
+
+          {profilSec?.resume && (
+            <div className="bg-slate-50 border-l-4 border-[#D4AF37] p-3 text-xs text-slate-700 italic leading-relaxed">
+              {profilSec.resume}
+            </div>
+          )}
+
+          {renderDynamicSectionGroup(getSectionsForColumn('principale'), false, "text-xs font-serif font-black uppercase tracking-wider text-[#0F172A] border-b-2 border-[#0F172A] pb-1")}
+        </div>
+      </div>
+    );
+  }
+
+  /* ==================================================================
+   * MODEL 15: OLIVE NATURE ENGINEERING (VERT OLIVE & DESIGN ÉPURÉ)
+   * ================================================================== */
+  if (layoutType === 'olive-nature-engineering' || cv.templateId === 'modele-15') {
+    return (
+      <div
+        id={id}
+        className={`bg-white text-slate-800 w-full min-h-[297mm] h-auto shadow-xl rounded-none sm:rounded-lg border border-slate-300 relative select-none flex ${fontSizeClasses} ${lineHeightClasses} ${letterSpacingClasses}`}
+        style={{ fontFamily: fontCss, ...dynamicTextStyle }}
+      >
+        {renderWatermarkOverlay()}
+        {renderInteractiveToolbar()}
+
+        {/* Left Soft Olive Sidebar */}
+        <div
+          className="w-[36%] p-6 space-y-6 shrink-0 flex flex-col justify-between border-r border-slate-200"
+          style={{ backgroundColor: shades.secondaryLight || '#ECF3E8' }}
+        >
+          <div className="space-y-6">
+            {showPhoto && (
+              <div
+                className={`mx-auto border-2 border-white shadow-md overflow-hidden bg-slate-800 ${photoShapeClass}`}
+                style={photoSizeStyle || { width: '96px', height: '96px' }}
+              >
+                <img src={cv.photoUrl} alt="Portrait" className={`w-full h-full object-cover ${photoShapeClass}`} />
+              </div>
+            )}
+
+            <div className="space-y-2 text-xs text-slate-700">
+              <h2 className="text-xs font-bold uppercase tracking-wider text-[#3F6212] border-b border-[#3F6212]/30 pb-1">CONTACT</h2>
+              {profilSec?.email && <p className="truncate">✉️ {profilSec.email}</p>}
+              {profilSec?.telephone && <p>📞 {profilSec.telephone}</p>}
+              {profilSec?.adresse && <p>📍 {profilSec.adresse}</p>}
+            </div>
+
+            {renderDynamicSectionGroup(getSectionsForColumn('gauche'), false, "text-xs font-bold uppercase tracking-wider text-[#3F6212] border-b border-[#3F6212]/30 pb-1")}
+          </div>
+        </div>
+
+        {/* Right Main Column */}
+        <div className="w-[64%] p-8 space-y-6 bg-white overflow-hidden flex flex-col">
+          <div className="border-b-2 border-[#3F6212] pb-3">
+            <h1 className="text-2xl font-black text-slate-900 tracking-tight uppercase">{mainTitle}</h1>
+            <p className="text-xs font-bold text-[#3F6212] uppercase tracking-widest mt-0.5">{subTitle}</p>
+          </div>
+
+          {profilSec?.resume && (
+            <p className="text-xs text-slate-600 italic leading-relaxed bg-slate-50 p-3 rounded-lg border-l-2 border-[#3F6212]">{profilSec.resume}</p>
+          )}
+
+          {renderDynamicSectionGroup(getSectionsForColumn('principale'), false, "text-xs font-black uppercase tracking-wider text-[#3F6212] border-b pb-1")}
+        </div>
+      </div>
+    );
+  }
+
+  /* ==================================================================
+   * DEFAULT FALLBACK (CLEAN SINGLE & DUAL COLUMN HANDLER)
    * ================================================================== */
   return (
     <div
       id={id}
-      className={`bg-white text-slate-900 w-full aspect-[210/297] shadow-xl rounded-none sm:rounded-lg overflow-hidden border border-slate-300 relative select-none flex ${fontSizeClasses} ${lineHeightClasses} ${letterSpacingClasses}`}
-      style={{ fontFamily: `"${fontFamily}", sans-serif` }}
+      className={`bg-white text-slate-900 w-full min-h-[297mm] h-auto shadow-xl rounded-none sm:rounded-lg border border-slate-300 relative select-none flex ${fontSizeClasses} ${lineHeightClasses} ${letterSpacingClasses}`}
+      style={{ fontFamily: fontCss, ...dynamicTextStyle }}
     >
       {renderWatermarkOverlay()}
       {renderInteractiveToolbar()}
-      <div className="w-[36%] text-white p-6 space-y-6 shrink-0 flex flex-col items-center text-center" style={{ backgroundColor: accent }}>
+      <div className="w-[36%] text-white p-6 space-y-6 shrink-0 flex flex-col items-center text-center" style={{ backgroundColor: shades.primary }}>
         {showPhoto && (
-          <div className={`border-2 border-[#D4AF37] overflow-hidden shadow-lg bg-slate-800 ${photoShapeClass}`} style={photoSizeStyle || { width: '96px', height: '96px' }}>
+          <div className={`border-2 border-white/50 overflow-hidden shadow-lg bg-slate-800 ${photoShapeClass}`} style={photoSizeStyle || { width: '96px', height: '96px' }}>
             <img src={cv.photoUrl} alt="Portrait" className={`w-full h-full object-cover ${photoShapeClass}`} />
           </div>
         )}
-        <div className="w-full space-y-2 text-xs text-slate-300">
-          {profilSec?.email && <p className="truncate">✉️ {profilSec.email}</p>}
-          {profilSec?.telephone && <p>📞 {profilSec.telephone}</p>}
-          {profilSec?.adresse && <p>📍 {profilSec.adresse}</p>}
+        <div className="w-full space-y-2 text-xs text-slate-200">
+          {profilSec?.email && <p className="truncate flex items-center gap-1.5 justify-center"><Mail className="w-3.5 h-3.5 shrink-0" /><span className="truncate">{profilSec.email}</span></p>}
+          {profilSec?.telephone && <p className="flex items-center gap-1.5 justify-center"><Phone className="w-3.5 h-3.5 shrink-0" /><span>{profilSec.telephone}</span></p>}
+          {profilSec?.adresse && <p className="flex items-center gap-1.5 justify-center"><MapPin className="w-3.5 h-3.5 shrink-0" /><span>{profilSec.adresse}</span></p>}
         </div>
+        {renderDynamicSectionGroup(getSectionsForColumn('gauche'), true, "text-xs font-bold uppercase tracking-wider text-white border-b border-white/30 pb-1")}
       </div>
-      <div className="w-[64%] p-8 space-y-6 bg-white overflow-hidden">
-        <div className="border-b-2 border-[#0F172A] pb-3">
-          <h1 className="text-2xl font-bold text-[#0F172A] uppercase">{mainTitle}</h1>
-          <p className="text-xs font-bold text-amber-700 uppercase mt-0.5">{subTitle}</p>
+      <div className="w-[64%] p-8 space-y-6 bg-white overflow-hidden flex flex-col">
+        <div className="border-b-2 border-slate-900 pb-3">
+          <h1 className="text-2xl font-bold text-slate-900 uppercase">{mainTitle}</h1>
+          <p className="text-xs font-bold uppercase mt-0.5" style={{ color: shades.primary }}>{subTitle}</p>
         </div>
-        {profilSec?.resume && <p className="text-xs text-slate-600 italic">{profilSec.resume}</p>}
-        {experienceSec.map((sec, idx) => (
-          <div key={sec.id} className="space-y-2 relative group">
-            {renderPreviewSectionControls(sec.id, idx, visibleSections.length)}
-            <h2 className="text-xs font-bold uppercase tracking-wider text-[#0F172A] border-b pb-1">{sec.titre}</h2>
-            {(sec.contenu as ExperienceItem[])?.map(exp => (
-              <div key={exp.id} className="text-xs">
-                <p className="font-bold text-slate-900">{exp.poste}</p>
-                <p className="text-[11px] text-amber-700">{exp.entreprise} ({exp.dateDebut} - {exp.actuel ? 'Présent' : exp.dateFin})</p>
-                <p className="text-[11px] text-slate-600 whitespace-pre-line">{exp.description}</p>
-              </div>
-            ))}
-          </div>
-        ))}
+        {profilSec?.resume && <p className="text-xs text-slate-600 italic leading-relaxed">{profilSec.resume}</p>}
+        {renderDynamicSectionGroup(getSectionsForColumn('principale'), false, "text-xs font-bold uppercase tracking-wider text-slate-900 border-b-2 border-slate-800 pb-1")}
       </div>
     </div>
   );

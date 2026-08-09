@@ -46,7 +46,7 @@ export const SortableSectionItem: React.FC<SortableSectionItemProps> = ({
     <div
       ref={setNodeRef}
       style={style}
-      className={`bg-white dark:bg-slate-900 rounded-xl border transition-all mb-3 overflow-hidden ${
+      className={`bg-white dark:bg-slate-900 rounded-2xl border transition-all mb-3 overflow-hidden ${
         isDragging 
           ? 'border-blue-500 shadow-xl z-20 ring-2 ring-blue-500/20' 
           : section.visible 
@@ -54,16 +54,26 @@ export const SortableSectionItem: React.FC<SortableSectionItemProps> = ({
             : 'border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/50 opacity-75'
       }`}
     >
-      {/* Header Bar */}
-      <div className="flex items-center justify-between px-3.5 py-3 bg-slate-50/80 dark:bg-slate-950/60 border-b border-slate-100 dark:border-slate-800 select-none">
+      {/* Header Bar - Entire row can be clicked to toggle expand */}
+      <div 
+        onClick={(e) => {
+          // Only expand/collapse if click wasn't on an input, select, or action button
+          const target = e.target as HTMLElement;
+          if (!target.closest('input') && !target.closest('select') && !target.closest('button')) {
+            onToggleExpand();
+          }
+        }}
+        className="flex items-center justify-between px-3.5 py-3 bg-slate-50/80 dark:bg-slate-950/60 border-b border-slate-100 dark:border-slate-800 select-none cursor-pointer hover:bg-slate-100/80 dark:hover:bg-slate-900 transition-colors"
+      >
         
-        {/* Left Drag Handle & Title */}
+        {/* Left Drag Handle & Title Input */}
         <div className="flex items-center space-x-2 flex-1 mr-2">
           <button
             {...attributes}
             {...listeners}
             className="cursor-grab active:cursor-grabbing p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-800 rounded transition-colors"
             title="Glisser pour réordonner"
+            onClick={(e) => e.stopPropagation()}
           >
             <GripVertical className="w-4 h-4" />
           </button>
@@ -72,23 +82,24 @@ export const SortableSectionItem: React.FC<SortableSectionItemProps> = ({
             type="text"
             value={section.titre}
             onChange={(e) => onUpdateTitle(e.target.value)}
-            className="font-bold text-slate-800 dark:text-slate-100 text-sm bg-transparent border border-transparent hover:border-slate-300 dark:hover:border-slate-700 focus:border-blue-500 rounded px-1.5 py-0.5 outline-hidden transition-colors flex-1"
+            onClick={(e) => e.stopPropagation()}
+            className="font-bold text-slate-800 dark:text-slate-100 text-xs sm:text-sm bg-transparent border border-transparent hover:border-slate-300 dark:hover:border-slate-700 focus:border-blue-500 rounded px-1.5 py-0.5 outline-hidden transition-colors flex-1"
             placeholder="Titre de la section"
           />
         </div>
 
         {/* Right Actions */}
-        <div className="flex items-center space-x-1">
+        <div className="flex items-center space-x-1" onClick={(e) => e.stopPropagation()}>
           {onUpdateColonne && (
             <select
               value={section.colonne || 'principale'}
               onChange={(e) => onUpdateColonne(e.target.value as any)}
               className="text-[11px] font-semibold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded px-1.5 py-0.5 text-slate-700 dark:text-slate-300 outline-hidden"
-              title="Positionnement de la section (Gauche / Droite)"
+              title="Positionnement de la section (Zone Principale / Colonne Gauche / Droite)"
             >
-              <option value="principale">🎯 Principale</option>
-              <option value="gauche">◀️ Gauche</option>
-              <option value="droite">▶️ Droite</option>
+              <option value="principale">🎯 Zone Principale</option>
+              <option value="gauche">◀️ Col. Gauche</option>
+              <option value="droite">▶️ Col. Droite</option>
             </select>
           )}
 
@@ -124,8 +135,10 @@ export const SortableSectionItem: React.FC<SortableSectionItemProps> = ({
           <button
             type="button"
             onClick={onToggleExpand}
-            className="p-1.5 text-slate-500 dark:text-slate-400 hover:bg-slate-200/60 dark:hover:bg-slate-800 rounded-lg transition-colors ml-1 cursor-pointer"
+            className="p-1.5 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 rounded-lg transition-colors ml-1 cursor-pointer font-bold text-xs flex items-center gap-1"
+            title={isExpanded ? 'Réduire la section' : 'Déplier pour éditer'}
           >
+            <span className="text-[10px] hidden sm:inline">{isExpanded ? 'Réduire' : 'Éditer'}</span>
             {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
           </button>
         </div>
@@ -134,7 +147,7 @@ export const SortableSectionItem: React.FC<SortableSectionItemProps> = ({
 
       {/* Section Content Area when expanded */}
       {isExpanded && (
-        <div className="p-4 bg-white dark:bg-slate-900 space-y-4">
+        <div className="p-4 bg-white dark:bg-slate-900 space-y-4 border-t border-slate-100 dark:border-slate-800 animate-fadeIn">
           {children}
         </div>
       )}

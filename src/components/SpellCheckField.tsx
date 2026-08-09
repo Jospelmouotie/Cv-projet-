@@ -1,7 +1,7 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Language } from '../types';
-import { checkTextSpelling, SpellError } from '../utils/spellcheck';
-import { AlertCircle, Check, X, Bold, Italic } from 'lucide-react';
+import { checkTextWithAi, AiSpellError } from '../utils/spellcheck';
+import { AlertCircle, Check, X, Bold, Italic, Sparkles, Loader2 } from 'lucide-react';
 
 interface SpellCheckFieldProps {
   label?: string;
@@ -22,11 +22,27 @@ export const SpellCheckField: React.FC<SpellCheckFieldProps> = ({
   rows = 3,
   placeholder = ''
 }) => {
-  const [activeError, setActiveError] = useState<SpellError | null>(null);
-  const [ignoredWords, setIgnoredWords] = useState<string[]>([]);
+  const [aiErrors, setAiErrors] = useState<AiSpellError[]>([]);
+  const [loadingAi, setLoadingAi] = useState<boolean>(false);
+  const [activeError, setActiveError] = useState<AiSpellError | null>(null);
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
 
-  const errors = checkTextSpelling(value, langue, ignoredWords);
+  // Debounced AI spellcheck call on value change
+  useEffect(() => {
+    if (!value || value.trim().length < 5) {
+      setAiErrors([]);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setLoadingAi(true);
+      const errors = await checkTextWithAi(value, langue);
+      setAiErrors(errors);
+      setLoadingAi(false);
+    }, 750);
+
+    return () => clearTimeout(timer);
+  }, [value, langue]);
 
   const applyFormatting = (format: 'bold' | 'italic') => {
     const el = inputRef.current;
@@ -41,7 +57,6 @@ export const SpellCheckField: React.FC<SpellCheckFieldProps> = ({
       selectedText = format === 'bold' ? 'texte gras' : 'texte italique';
     }
 
-    // Toggle formatting if already wrapped
     const isWrapped = selectedText.startsWith(wrapper) && selectedText.endsWith(wrapper) && selectedText.length > wrapper.length * 2;
     let newSelectedText = '';
     if (isWrapped) {
@@ -61,16 +76,16 @@ export const SpellCheckField: React.FC<SpellCheckFieldProps> = ({
     }, 50);
   };
 
-  const applySuggestion = (err: SpellError, suggestion: string) => {
-    const before = value.substring(0, err.startIndex);
-    const after = value.substring(err.endIndex);
-    const newValue = before + suggestion + after;
-    onChange(newValue);
+  const applyCorrection = (err: AiSpellError) => {
+    if (!err.motOriginal || !err.correction) return;
+    const updatedValue = value.replace(err.motOriginal, err.correction);
+    onChange(updatedValue);
+    setAiErrors(prev => prev.filter(e => e.motOriginal !== err.motOriginal));
     setActiveError(null);
   };
 
-  const ignoreWord = (word: string) => {
-    setIgnoredWords(prev => [...prev, word]);
+  const ignoreCorrection = (err: AiSpellError) => {
+    setAiErrors(prev => prev.filter(e => e.motOriginal !== err.motOriginal));
     setActiveError(null);
   };
 
@@ -84,13 +99,20 @@ export const SpellCheckField: React.FC<SpellCheckFieldProps> = ({
         ) : <span />}
 
         <div className="flex items-center gap-1.5">
-          {/* Quick Selection Formatting Buttons (G / I) */}
+          {loadingAi && (
+            <span className="text-[10px] text-blue-600 dark:text-blue-400 flex items-center gap-1 font-medium animate-pulse">
+              <Loader2 className="w-3 h-3 animate-spin" />
+              <span>Vérification IA...</span>
+            </span>
+          )}
+
+          {/* Quick Formatting Buttons */}
           <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700">
             <button
               type="button"
               onClick={() => applyFormatting('bold')}
               className="px-2 py-0.5 text-xs font-extrabold text-slate-800 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition-colors cursor-pointer flex items-center gap-0.5"
-              title="Sélectionnez un mot et cliquez sur G pour le mettre en gras"
+              title="Gras"
             >
               <Bold className="w-3 h-3" />
               <span>G</span>
@@ -99,17 +121,17 @@ export const SpellCheckField: React.FC<SpellCheckFieldProps> = ({
               type="button"
               onClick={() => applyFormatting('italic')}
               className="px-2 py-0.5 text-xs font-serif italic font-bold text-slate-800 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition-colors cursor-pointer flex items-center gap-0.5"
-              title="Sélectionnez un mot et cliquez sur I pour le mettre en italique"
+              title="Italique"
             >
               <Italic className="w-3 h-3" />
               <span>I</span>
             </button>
           </div>
 
-          {errors.length > 0 && (
-            <span className="text-[10px] font-medium text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/80 border border-amber-200 dark:border-amber-800 px-2 py-0.5 rounded-full flex items-center gap-1">
-              <AlertCircle className="w-3 h-3" />
-              {errors.length}
+          {aiErrors.length > 0 && (
+            <span className="text-[10px] font-bold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/80 border border-amber-200 dark:border-amber-800 px-2 py-0.5 rounded-full flex items-center gap-1">
+              <Sparkles className="w-3 h-3 text-amber-500" />
+              <span>{aiErrors.length} suggestion{aiErrors.length > 1 ? 's' : ''} IA</span>
             </span>
           )}
         </div>
@@ -138,46 +160,60 @@ export const SpellCheckField: React.FC<SpellCheckFieldProps> = ({
           />
         )}
 
-        {/* Highlighted spelling suggestions pills */}
-        {errors.length > 0 && (
+        {/* AI Error Pill Suggestions */}
+        {aiErrors.length > 0 && (
           <div className="flex flex-wrap gap-1.5 mt-1.5">
-            {errors.slice(0, 3).map((err, idx) => (
+            {aiErrors.map((err, idx) => (
               <div key={idx} className="relative inline-block">
                 <button
                   type="button"
-                  onClick={() => setActiveError(activeError?.word === err.word ? null : err)}
-                  className="text-xs text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/80 hover:bg-amber-100 dark:hover:bg-amber-900 border border-amber-200 dark:border-amber-800 px-2 py-0.5 rounded-md flex items-center gap-1 transition-colors cursor-pointer"
+                  onClick={() => setActiveError(activeError?.motOriginal === err.motOriginal ? null : err)}
+                  className="text-xs text-amber-900 dark:text-amber-200 bg-amber-50 dark:bg-amber-950/80 hover:bg-amber-100 dark:hover:bg-amber-900 border border-amber-300 dark:border-amber-800 px-2 py-0.5 rounded-lg flex items-center gap-1 transition-colors cursor-pointer shadow-xs"
                 >
-                  <span className="underline underline-offset-2 decoration-amber-500 font-semibold">{err.word}</span>
+                  <Sparkles className="w-3 h-3 text-amber-500" />
+                  <span className="line-through decoration-amber-500 opacity-70">{err.motOriginal}</span>
+                  <span className="font-bold text-amber-700 dark:text-amber-300">➔ {err.correction}</span>
                 </button>
 
-                {/* Suggestion Popover */}
-                {activeError?.word === err.word && (
-                  <div className="absolute left-0 bottom-full mb-1 z-30 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-lg rounded-xl p-2 w-52 space-y-1">
-                    <p className="text-[10px] text-slate-400 dark:text-slate-500 uppercase font-bold px-1">Suggestions :</p>
-                    {err.suggestions.length > 0 ? (
-                      err.suggestions.map((sug, sIdx) => (
-                        <button
-                          key={sIdx}
-                          type="button"
-                          onClick={() => applySuggestion(err, sug)}
-                          className="w-full text-left text-xs text-slate-700 dark:text-slate-200 hover:bg-blue-50 dark:hover:bg-blue-950 hover:text-blue-700 dark:hover:text-blue-300 font-medium px-2 py-1 rounded-md transition-colors flex items-center justify-between cursor-pointer"
-                        >
-                          <span>{sug}</span>
-                          <Check className="w-3 h-3 text-blue-600 dark:text-blue-400" />
-                        </button>
-                      ))
-                    ) : (
-                      <p className="text-xs text-slate-400 dark:text-slate-500 italic px-2 py-1">Aucune suggestion</p>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => ignoreWord(err.word)}
-                      className="w-full text-left text-[11px] text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 font-medium px-2 py-1 rounded-md transition-colors flex items-center justify-between border-t border-slate-100 dark:border-slate-800 pt-1 cursor-pointer"
-                    >
-                      <span>Ignorer le mot</span>
-                      <X className="w-3 h-3 text-slate-400" />
-                    </button>
+                {/* AI Suggestion Popover */}
+                {activeError?.motOriginal === err.motOriginal && (
+                  <div className="absolute left-0 bottom-full mb-1 z-30 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl rounded-xl p-2.5 w-60 space-y-2">
+                    <div className="flex items-center gap-1.5 text-blue-600 dark:text-blue-400 font-bold text-xs border-b border-slate-100 dark:border-slate-800 pb-1">
+                      <Sparkles className="w-3.5 h-3.5" />
+                      <span>Correction IA Gemini</span>
+                    </div>
+
+                    <div className="space-y-1 text-xs">
+                      <p className="text-slate-500 dark:text-slate-400 line-through text-[11px]">{err.motOriginal}</p>
+                      <p className="font-bold text-emerald-600 dark:text-emerald-400 text-sm flex items-center gap-1">
+                        <Check className="w-3.5 h-3.5" />
+                        <span>{err.correction}</span>
+                      </p>
+                      {err.explication && (
+                        <p className="text-[11px] text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800 p-1.5 rounded-md leading-tight">
+                          {err.explication}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-1.5 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => applyCorrection(err)}
+                        className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs py-1 px-2 rounded-lg transition-colors flex items-center justify-center gap-1 cursor-pointer"
+                      >
+                        <Check className="w-3 h-3" />
+                        <span>Appliquer</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => ignoreCorrection(err)}
+                        className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg transition-colors cursor-pointer"
+                        title="Ignorer"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>

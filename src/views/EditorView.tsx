@@ -64,14 +64,12 @@ export const EditorView: React.FC<EditorViewProps> = ({
 
   const [cv, setCv] = useState<CV>(initialCV);
   const [activeTab, setActiveTab] = useState<'content' | 'style' | 'preview'>('content');
-  const [expandedSectionIds, setExpandedSectionIds] = useState<Record<string, boolean>>({
-    'sec-profil': true,
-    'sec-exp': true
-  });
+  const [expandedSectionIds, setExpandedSectionIds] = useState<Record<string, boolean>>({});
 
   const [cropperImageSrc, setCropperImageSrc] = useState<string | null>(null);
   const [autoSaveStatus, setAutoSaveStatus] = useState<'saved' | 'saving'>('saved');
   const [showExportMenu, setShowExportMenu] = useState(false);
+  const [exportNotice, setExportNotice] = useState<{ type: 'loading' | 'success' | 'error'; message: string } | null>(null);
 
   // DnD Sensors
   const sensors = useSensors(
@@ -130,9 +128,12 @@ export const EditorView: React.FC<EditorViewProps> = ({
     });
   };
 
-  // Section Toggle Expand
+  // Section Toggle Expand - Default state is expanded (true), so first click toggles to false
   const toggleExpandSection = (id: string) => {
-    setExpandedSectionIds(prev => ({ ...prev, [id]: !prev[id] }));
+    setExpandedSectionIds(prev => {
+      const isCurrentlyExpanded = prev[id] !== false;
+      return { ...prev, [id]: !isCurrentlyExpanded };
+    });
   };
 
   // Section Visibility Toggle
@@ -208,20 +209,66 @@ export const EditorView: React.FC<EditorViewProps> = ({
   };
 
   // Export Format Handlers
-  const triggerExport = (format: 'pdf' | 'png' | 'jpeg') => {
-    // Payment check deactivated for testing export functionality as requested by user
+  const triggerExport = async (format: 'pdf' | 'png' | 'jpeg') => {
     const filename = getExportFilename();
-    if (format === 'pdf') {
-      exportCVToPDF('cv-preview-container', filename);
-    } else {
-      exportCVToImage('cv-preview-container', filename, format);
-    }
     setShowExportMenu(false);
+    setExportNotice({
+      type: 'loading',
+      message: `Génération du fichier ${format.toUpperCase()} HD en cours...`
+    });
+
+    try {
+      let result;
+      if (format === 'pdf') {
+        result = await exportCVToPDF('cv-preview-container', filename);
+      } else {
+        result = await exportCVToImage('cv-preview-container', filename, format);
+      }
+
+      if (result.success) {
+        setExportNotice({
+          type: 'success',
+          message: result.message || `Export ${format.toUpperCase()} réussi !`
+        });
+      } else {
+        setExportNotice({
+          type: 'error',
+          message: result.message || `Échec de l'exportation ${format.toUpperCase()}.`
+        });
+      }
+    } catch (err: any) {
+      setExportNotice({
+        type: 'error',
+        message: `Erreur d'exportation: ${err?.message || 'Problème de rendu'}`
+      });
+    }
+
+    setTimeout(() => {
+      setExportNotice(null);
+    }, 5000);
   };
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] bg-slate-100 dark:bg-slate-950 flex flex-col transition-colors duration-200">
+    <div className="min-h-[calc(100vh-4rem)] bg-slate-100 dark:bg-slate-950 flex flex-col transition-colors duration-200 relative">
       
+      {/* Toast Notice Banner for Export Operations */}
+      {exportNotice && (
+        <div className="fixed top-20 right-6 z-50 animate-bounce">
+          <div className={`px-4 py-3 rounded-2xl shadow-2xl border flex items-center gap-3 text-xs font-bold ${
+            exportNotice.type === 'loading'
+              ? 'bg-blue-900 text-blue-100 border-blue-500'
+              : exportNotice.type === 'success'
+              ? 'bg-emerald-900 text-emerald-100 border-emerald-500'
+              : 'bg-rose-900 text-rose-100 border-rose-500'
+          }`}>
+            {exportNotice.type === 'loading' && <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin shrink-0" />}
+            {exportNotice.type === 'success' && <Check className="w-4 h-4 text-emerald-300 shrink-0" />}
+            {exportNotice.type === 'error' && <AlertCircle className="w-4 h-4 text-rose-300 shrink-0" />}
+            <span>{exportNotice.message}</span>
+          </div>
+        </div>
+      )}
+
       {/* Top Editor Toolbar */}
       <div className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-4 py-3 sticky top-16 z-30 shadow-xs flex items-center justify-between">
         
@@ -247,50 +294,70 @@ export const EditorView: React.FC<EditorViewProps> = ({
           </div>
         </div>
 
-        {/* Center Mobile View Tabs */}
+        {/* Center Mobile View Tabs - Compact & Styled */}
         <div className="flex md:hidden bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700">
           <button
             onClick={() => setActiveTab('content')}
-            className={`px-3 py-1 text-xs font-bold rounded-lg cursor-pointer ${activeTab === 'content' ? 'bg-white dark:bg-slate-700 shadow-xs text-blue-700 dark:text-blue-300' : 'text-slate-600 dark:text-slate-400'}`}
+            className={`px-2.5 py-1 text-xs font-bold rounded-lg cursor-pointer transition-colors ${activeTab === 'content' ? 'bg-white dark:bg-slate-700 shadow-xs text-blue-700 dark:text-blue-300' : 'text-slate-600 dark:text-slate-400'}`}
           >
             Formulaire
           </button>
           <button
-            onClick={() => setActiveTab('preview')}
-            className={`px-3 py-1 text-xs font-bold rounded-lg cursor-pointer ${activeTab === 'preview' ? 'bg-white dark:bg-slate-700 shadow-xs text-blue-700 dark:text-blue-300' : 'text-slate-600 dark:text-slate-400'}`}
+            onClick={() => setActiveTab('style')}
+            className={`px-2.5 py-1 text-xs font-bold rounded-lg cursor-pointer transition-colors ${activeTab === 'style' ? 'bg-white dark:bg-slate-700 shadow-xs text-blue-700 dark:text-blue-300' : 'text-slate-600 dark:text-slate-400'}`}
           >
-            Aperçu CV
+            Style
           </button>
         </div>
 
-        {/* Right Actions: Style & Export */}
-        <div className="flex items-center space-x-2">
+        {/* Right Actions: Eye (Preview on Mobile), Style (Palette), Export (Download) */}
+        <div className="flex items-center space-x-1.5 sm:space-x-2">
+          {/* Mobile Preview Button - Eye Icon Only */}
           <button
+            type="button"
+            onClick={() => setActiveTab(activeTab === 'preview' ? 'content' : 'preview')}
+            className={`p-2.5 sm:hidden rounded-xl border transition-all flex items-center justify-center cursor-pointer ${
+              activeTab === 'preview'
+                ? 'bg-blue-600 text-white border-blue-600 shadow-md ring-2 ring-blue-500/30'
+                : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700'
+            }`}
+            title="Aperçu du CV (Œil)"
+          >
+            <Eye className="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0" />
+          </button>
+
+          {/* Style Toggle (Desktop & Tablet) */}
+          <button
+            type="button"
             onClick={() => setActiveTab(activeTab === 'style' ? 'content' : 'style')}
-            className={`px-3 py-2 text-xs font-bold rounded-xl border transition-all flex items-center space-x-1.5 cursor-pointer ${
+            className={`p-2.5 sm:px-3 sm:py-2 text-xs font-bold rounded-xl border transition-all flex items-center justify-center space-x-1.5 cursor-pointer ${
               activeTab === 'style' 
                 ? 'bg-blue-50 dark:bg-blue-950/80 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300' 
                 : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700'
             }`}
+            title={t('customizeStyle')}
           >
-            <Palette className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+            <Palette className="w-5 h-5 sm:w-4 sm:h-4 text-blue-600 dark:text-blue-400 shrink-0" />
             <span className="hidden sm:inline">{t('customizeStyle')}</span>
           </button>
 
+          {/* Download / Export Menu */}
           <div className="relative">
             <button
+              type="button"
               onClick={() => setShowExportMenu(prev => !prev)}
-              className="px-4 py-2 font-bold text-xs rounded-xl shadow-md transition-all flex items-center space-x-2 cursor-pointer bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-500/20"
+              className="p-2.5 sm:px-4 sm:py-2 font-bold text-xs rounded-xl shadow-md transition-all flex items-center justify-center space-x-1.5 cursor-pointer bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-500/20"
+              title="Télécharger / Exporter PDF ou Image"
             >
-              <Download className="w-4 h-4" />
-              <span>Télécharger / Exporter PDF ▾</span>
+              <Download className="w-5 h-5 sm:w-4 sm:h-4 shrink-0" />
+              <span className="hidden sm:inline">Télécharger / Exporter PDF ▾</span>
             </button>
 
             {/* Export Dropdown Menu */}
             {showExportMenu && (
               <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl z-50 p-1.5 space-y-1">
                 <div className="px-3 py-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/50 rounded-md">
-                  Mode Test PDF Actif (Sans Paiement)
+                  Exportation PDF HD A4 Gratuite
                 </div>
                 <button
                   onClick={() => triggerExport('pdf')}
@@ -320,15 +387,19 @@ export const EditorView: React.FC<EditorViewProps> = ({
 
       </div>
 
-      {/* Floating Fixed Mobile Live Preview Button (Bottom Left) */}
-      <div className="fixed bottom-5 left-4 z-50 md:hidden">
+      {/* Floating Fixed Mobile Live Preview Button (Bottom Right) - Eye Icon Only */}
+      <div className="fixed bottom-5 right-4 z-50 md:hidden">
         <button
           type="button"
           onClick={() => setActiveTab(activeTab === 'preview' ? 'content' : 'preview')}
-          className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-3 rounded-full shadow-2xl ring-4 ring-blue-500/30 text-xs font-black cursor-pointer active:scale-95 transition-all"
+          className={`p-3.5 rounded-full shadow-2xl ring-4 ring-blue-500/30 cursor-pointer active:scale-95 transition-all flex items-center justify-center ${
+            activeTab === 'preview'
+              ? 'bg-slate-900 text-white border border-slate-700'
+              : 'bg-blue-600 text-white'
+          }`}
+          title="Aperçu du CV"
         >
-          <Eye className="w-4 h-4 text-amber-300 animate-pulse" />
-          <span>{activeTab === 'preview' ? '📝 Modifier le Texte' : '👁️ Aperçu Temps Réel'}</span>
+          <Eye className="w-6 h-6 text-white" />
         </button>
       </div>
 
@@ -400,99 +471,161 @@ export const EditorView: React.FC<EditorViewProps> = ({
                 </div>
               </div>
 
-              {/* Font Family Selector */}
+              {/* Font Family Selector (Liste déroulante) */}
               <div className="space-y-2">
-                <label className="block text-xs font-bold text-slate-700 uppercase">
-                  Police de Caractères
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase">
+                  Police de Caractères (Liste Déroulante)
                 </label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <select
+                  value={cv.police || 'Inter'}
+                  onChange={(e) => setCv({ ...cv, police: e.target.value })}
+                  className="w-full px-3.5 py-2.5 text-xs font-bold bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl focus:border-blue-500 outline-hidden cursor-pointer"
+                >
                   {FONT_OPTIONS.map(f => (
-                    <button
-                      key={f.id}
-                      type="button"
-                      onClick={() => setCv({ ...cv, police: f.id })}
-                      className={`p-2.5 text-left border rounded-xl text-xs font-medium transition-all ${
-                        cv.police === f.id
-                          ? 'border-blue-600 bg-blue-50 text-blue-700 font-bold'
-                          : 'border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-800'
-                      }`}
-                      style={{ fontFamily: f.family }}
-                    >
+                    <option key={f.id} value={f.id} style={{ fontFamily: f.family }}>
                       {f.name}
-                    </button>
+                    </option>
                   ))}
-                </div>
+                </select>
               </div>
 
-              {/* Advanced Typography & Spacing Controls */}
-              <div className="border-t border-slate-200 pt-4 space-y-4">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                  Taille de police & Espacement des paragraphes
+              {/* Advanced Typography & Precision Formatting Controls */}
+              <div className="border-t border-slate-200 dark:border-slate-800 pt-4 space-y-5">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                  Réglages Précis Typographie & Interligne
                 </h3>
 
-                {/* Font Size */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-[11px] font-bold text-slate-600 mb-1">Taille du Texte (pt / Word)</label>
-                    <select
-                      value={cv.taillePolice || '11pt'}
-                      onChange={(e) => setCv({ ...cv, taillePolice: e.target.value })}
-                      className="w-full px-2.5 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg outline-hidden font-bold text-slate-800"
-                    >
-                      {FONT_SIZES.map(s => (
-                        <option key={s.id} value={s.id}>{s.name}</option>
-                      ))}
-                      <option value="sm">Petite (Dense)</option>
-                      <option value="md">Standard (Recommandée)</option>
-                      <option value="lg">Grande (Lisible)</option>
-                      <option value="xl">Très Grande</option>
-                    </select>
+                {/* Font Size Slider & Numeric Input (4px to 30px) */}
+                <div className="space-y-1.5 bg-slate-50 dark:bg-slate-800/60 p-3 rounded-xl border border-slate-200/80 dark:border-slate-700">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                      Taille des Textes (de 4 à 30 px) :
+                    </label>
+                    <span className="text-xs font-black text-blue-600 dark:text-blue-400 bg-white dark:bg-slate-900 px-2 py-0.5 rounded border">
+                      {cv.taillePoliceValeur ?? 11} px
+                    </span>
                   </div>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="range"
+                      min={4}
+                      max={30}
+                      step={1}
+                      value={cv.taillePoliceValeur ?? 11}
+                      onChange={(e) => setCv({ ...cv, taillePoliceValeur: parseInt(e.target.value) })}
+                      className="flex-1 accent-blue-600 cursor-pointer"
+                    />
+                    <input
+                      type="number"
+                      min={4}
+                      max={30}
+                      value={cv.taillePoliceValeur ?? 11}
+                      onChange={(e) => {
+                        const val = Math.max(4, Math.min(30, parseInt(e.target.value) || 11));
+                        setCv({ ...cv, taillePoliceValeur: val });
+                      }}
+                      className="w-16 px-2 py-1 text-xs font-bold text-center bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg outline-hidden"
+                    />
+                  </div>
+                </div>
 
-                  <div>
-                    <label className="block text-[11px] font-bold text-slate-600 mb-1">Hauteur de Ligne</label>
-                    <select
-                      value={cv.hauteurLigne || 'normal'}
-                      onChange={(e) => setCv({ ...cv, hauteurLigne: e.target.value as any })}
-                      className="w-full px-2.5 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg outline-hidden font-medium"
-                    >
-                      <option value="tight">Compacte</option>
-                      <option value="normal">Normale</option>
-                      <option value="relaxed">Aérée</option>
-                      <option value="loose">Spacieuse</option>
-                    </select>
+                {/* Line Height Slider & Numeric Input (0.5 to 2.0) */}
+                <div className="space-y-1.5 bg-slate-50 dark:bg-slate-800/60 p-3 rounded-xl border border-slate-200/80 dark:border-slate-700">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                      Hauteur d'Interligne (de 0.5 à 2.0) :
+                    </label>
+                    <span className="text-xs font-black text-blue-600 dark:text-blue-400 bg-white dark:bg-slate-900 px-2 py-0.5 rounded border">
+                      {cv.hauteurLigneValeur ?? 1.3}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="range"
+                      min={0.5}
+                      max={2.0}
+                      step={0.1}
+                      value={cv.hauteurLigneValeur ?? 1.3}
+                      onChange={(e) => setCv({ ...cv, hauteurLigneValeur: parseFloat(e.target.value) })}
+                      className="flex-1 accent-blue-600 cursor-pointer"
+                    />
+                    <input
+                      type="number"
+                      min={0.5}
+                      max={2.0}
+                      step={0.1}
+                      value={cv.hauteurLigneValeur ?? 1.3}
+                      onChange={(e) => {
+                        const val = Math.max(0.5, Math.min(2.0, parseFloat(e.target.value) || 1.3));
+                        setCv({ ...cv, hauteurLigneValeur: val });
+                      }}
+                      className="w-16 px-2 py-1 text-xs font-bold text-center bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg outline-hidden"
+                    />
                   </div>
                 </div>
 
-                {/* Letter Spacing & Section Margins */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-[11px] font-bold text-slate-600 mb-1">Écartement des Lettres</label>
-                    <select
-                      value={cv.ecartementTexte || 'normal'}
-                      onChange={(e) => setCv({ ...cv, ecartementTexte: e.target.value as any })}
-                      className="w-full px-2.5 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg outline-hidden font-medium"
-                    >
-                      <option value="tight">Resserré</option>
-                      <option value="normal">Standard</option>
-                      <option value="wide">Espacé</option>
-                      <option value="widest">Très Espacé</option>
-                    </select>
-                  </div>
+                {/* Column Layout & Margin Settings */}
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 pt-2">
+                  Largeur & Marges des Colonnes
+                </h3>
 
-                  <div>
-                    <label className="block text-[11px] font-bold text-slate-600 mb-1">Marge des Sections</label>
-                    <select
-                      value={cv.margeSection || 'normal'}
-                      onChange={(e) => setCv({ ...cv, margeSection: e.target.value as any })}
-                      className="w-full px-2.5 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg outline-hidden font-medium"
-                    >
-                      <option value="compact">Compacte (1 page)</option>
-                      <option value="normal">Équilibrée</option>
-                      <option value="spacious">Aérée</option>
-                    </select>
+                {/* Left Column Width Slider (20% to 50%) */}
+                <div className="space-y-1.5 bg-slate-50 dark:bg-slate-800/60 p-3 rounded-xl border border-slate-200/80 dark:border-slate-700">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                      Largeur Colonne Gauche (Partie gauche) :
+                    </label>
+                    <span className="text-xs font-black text-blue-600 dark:text-blue-400 bg-white dark:bg-slate-900 px-2 py-0.5 rounded border">
+                      {cv.largeurColonneGauche ?? 33}% / {100 - (cv.largeurColonneGauche ?? 33)}%
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="range"
+                      min={20}
+                      max={50}
+                      step={1}
+                      value={cv.largeurColonneGauche ?? 33}
+                      onChange={(e) => setCv({ ...cv, largeurColonneGauche: parseInt(e.target.value) })}
+                      className="flex-1 accent-blue-600 cursor-pointer"
+                    />
+                    <span className="text-[11px] text-slate-400 font-mono">{cv.largeurColonneGauche ?? 33}%</span>
                   </div>
                 </div>
+
+                {/* Left & Right Column Margins / Padding */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1 bg-slate-50 dark:bg-slate-800/60 p-2.5 rounded-xl border border-slate-200/80 dark:border-slate-700">
+                    <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block">
+                      Marge Partie Gauche : <span className="text-blue-600">{cv.margeColonneGauche ?? 20} px</span>
+                    </label>
+                    <input
+                      type="range"
+                      min={4}
+                      max={40}
+                      step={1}
+                      value={cv.margeColonneGauche ?? 20}
+                      onChange={(e) => setCv({ ...cv, margeColonneGauche: parseInt(e.target.value) })}
+                      className="w-full accent-blue-600 cursor-pointer"
+                    />
+                  </div>
+
+                  <div className="space-y-1 bg-slate-50 dark:bg-slate-800/60 p-2.5 rounded-xl border border-slate-200/80 dark:border-slate-700">
+                    <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block">
+                      Marge Partie Droite : <span className="text-blue-600">{cv.margeColonneDroite ?? 20} px</span>
+                    </label>
+                    <input
+                      type="range"
+                      min={4}
+                      max={40}
+                      step={1}
+                      value={cv.margeColonneDroite ?? 20}
+                      onChange={(e) => setCv({ ...cv, margeColonneDroite: parseInt(e.target.value) })}
+                      className="w-full accent-blue-600 cursor-pointer"
+                    />
+                  </div>
+                </div>
+
               </div>
 
             </div>
@@ -587,6 +720,36 @@ export const EditorView: React.FC<EditorViewProps> = ({
                 </div>
               </div>
 
+              {/* Quick Expand/Collapse Toolbar */}
+              <div className="flex items-center justify-between px-1 py-1 text-xs font-bold text-slate-500">
+                <span>Sections du CV ({cv.sections.length})</span>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const allExpanded: Record<string, boolean> = {};
+                      cv.sections.forEach(s => { allExpanded[s.id] = true; });
+                      setExpandedSectionIds(allExpanded);
+                    }}
+                    className="text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+                  >
+                    Déplier tout
+                  </button>
+                  <span>•</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const allCollapsed: Record<string, boolean> = {};
+                      cv.sections.forEach(s => { allCollapsed[s.id] = false; });
+                      setExpandedSectionIds(allCollapsed);
+                    }}
+                    className="text-slate-500 dark:text-slate-400 hover:underline cursor-pointer"
+                  >
+                    Replier tout
+                  </button>
+                </div>
+              </div>
+
               {/* DnD Sections Context */}
               <DndContext
                 sensors={sensors}
@@ -601,7 +764,7 @@ export const EditorView: React.FC<EditorViewProps> = ({
                     <SortableSectionItem
                       key={sec.id}
                       section={sec}
-                      isExpanded={!!expandedSectionIds[sec.id]}
+                      isExpanded={expandedSectionIds[sec.id] !== false}
                       onToggleExpand={() => toggleExpandSection(sec.id)}
                       onToggleVisibility={() => toggleSectionVisibility(sec.id)}
                       onDuplicate={() => duplicateSection(sec.id)}

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { User, CV, Language, CVTemplate, Section } from './types';
 import { Navbar } from './components/Navbar';
+import { Sidebar } from './components/Sidebar';
 import { AuthModal } from './components/AuthModal';
 import { ImportModal } from './components/ImportModal';
 import { PaymentModal } from './components/PaymentModal';
@@ -15,6 +16,8 @@ export default function App() {
   const [showSplash, setShowSplash] = useState(true);
   const [langue, setLangue] = useState<Language>('fr');
   const [currentView, setCurrentView] = useState<'home' | 'dashboard' | 'gallery' | 'editor' | 'admin'>('home');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('cv_builder_theme');
@@ -221,8 +224,8 @@ export default function App() {
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans flex flex-col selection:bg-blue-100 selection:text-blue-900 transition-colors duration-200">
       {showSplash && <SplashScreen onFinish={() => setShowSplash(false)} />}
       
-      {/* Top Navbar */}
-      <Navbar
+      {/* Central Navigation & Control Sidebar Drawer */}
+      <Sidebar
         currentView={currentView}
         setCurrentView={setCurrentView}
         langue={langue}
@@ -234,8 +237,9 @@ export default function App() {
         onQuickLoginDemo={() => {
           setUser({
             id: 'u-demo-1',
-            nom: 'Jean Dupont',
-            email: 'jean.dupont@exemple.com',
+            nom: 'Jean Dupont (Candidat)',
+            email: 'jean.dupont@example.com',
+            role: 'CANDIDAT',
             langue: 'fr',
             createdAt: new Date().toISOString()
           });
@@ -252,6 +256,19 @@ export default function App() {
           });
           setCurrentView('admin');
         }}
+        isOpen={isSidebarOpen}
+        setIsOpen={setIsSidebarOpen}
+        hasActiveCv={!!activeCV}
+      />
+
+      {/* Header Bar with Toggle */}
+      <Navbar
+        currentView={currentView}
+        setCurrentView={setCurrentView}
+        langue={langue}
+        onToggleSidebar={() => setIsSidebarOpen(prev => !prev)}
+        user={user}
+        activeCvTitle={activeCV?.titre}
       />
 
       {/* Main View Router */}

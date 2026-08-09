@@ -10,7 +10,10 @@ export const CV_TEMPLATES: CVTemplate[] = [
       en: 'Teal/cyan top header banner, left ice-blue sidebar with top-left portrait and structured sections.'
     },
     layoutType: 'interimaire-teal',
+    layoutFamily: 'two-column-left',
+    supportsSecondaryAccent: true,
     defaultAccent: '#006666',
+    defaultSecondaryAccent: '#E6F0F2',
     defaultFont: 'Inter',
     badgeText: 'Modèle Photo 1'
   },
@@ -23,7 +26,10 @@ export const CV_TEMPLATES: CVTemplate[] = [
       en: 'Deep plum purple background with light arch photo frame and delicate dashed typography.'
     },
     layoutType: 'aissatou-plum',
+    layoutFamily: 'two-column-right',
+    supportsSecondaryAccent: true,
     defaultAccent: '#381A3C',
+    defaultSecondaryAccent: '#EADDF0',
     defaultFont: 'Playfair Display',
     badgeText: 'Modèle Photo 2'
   },
@@ -36,7 +42,10 @@ export const CV_TEMPLATES: CVTemplate[] = [
       en: 'Cyan medallion portrait on dark charcoal column with vertical timeline and level meters.'
     },
     layoutType: 'baxter-cyan',
+    layoutFamily: 'two-column-left',
+    supportsSecondaryAccent: true,
     defaultAccent: '#00B4D8',
+    defaultSecondaryAccent: '#22252A',
     defaultFont: 'Outfit',
     badgeText: 'Modèle Photo 3'
   },
@@ -49,6 +58,8 @@ export const CV_TEMPLATES: CVTemplate[] = [
       en: 'Central purple header shield badge with structured purple section dividers.'
     },
     layoutType: 'infirmiere-purple',
+    layoutFamily: 'single-column',
+    supportsSecondaryAccent: false,
     defaultAccent: '#522166',
     defaultFont: 'Inter',
     badgeText: 'Modèle Photo 4'
@@ -62,6 +73,8 @@ export const CV_TEMPLATES: CVTemplate[] = [
       en: 'Organic ocean wave contours at top and bottom on soft ice-green background.'
     },
     layoutType: 'ocean-wave-carlier',
+    layoutFamily: 'single-column',
+    supportsSecondaryAccent: false,
     defaultAccent: '#3B8B88',
     defaultFont: 'Lato',
     badgeText: 'Modèle Photo 5'
@@ -75,6 +88,8 @@ export const CV_TEMPLATES: CVTemplate[] = [
       en: 'Royal blue header banner with portrait, summary block, and progress bar skills column.'
     },
     layoutType: 'interimaire-royal-blue',
+    layoutFamily: 'single-column',
+    supportsSecondaryAccent: false,
     defaultAccent: '#1D3557',
     defaultFont: 'Inter',
     badgeText: 'Modèle Photo 6'
@@ -88,7 +103,10 @@ export const CV_TEMPLATES: CVTemplate[] = [
       en: 'Warm sand arch column on left, serif headlines with star icons and skill tag buttons.'
     },
     layoutType: 'celia-beige-arch',
+    layoutFamily: 'two-column-left',
+    supportsSecondaryAccent: true,
     defaultAccent: '#D8C3A5',
+    defaultSecondaryAccent: '#E8DED1',
     defaultFont: 'Playfair Display',
     badgeText: 'Modèle Photo 7'
   },
@@ -101,7 +119,10 @@ export const CV_TEMPLATES: CVTemplate[] = [
       en: 'Hexagonal portrait frame centered atop dark navy sidebar with bright orange timeline accents.'
     },
     layoutType: 'michael-hexagon-navy',
+    layoutFamily: 'two-column-left',
+    supportsSecondaryAccent: true,
     defaultAccent: '#1B2A4A',
+    defaultSecondaryAccent: '#F4A261',
     defaultFont: 'Outfit',
     badgeText: 'Modèle Photo 8'
   },
@@ -114,6 +135,8 @@ export const CV_TEMPLATES: CVTemplate[] = [
       en: 'Noble slate header with gold accent stripe and clean structured cards.'
     },
     layoutType: 'slate-executive',
+    layoutFamily: 'single-column',
+    supportsSecondaryAccent: false,
     defaultAccent: '#2D3748',
     defaultFont: 'Roboto',
     badgeText: 'Modèle Photo 9'
@@ -127,6 +150,8 @@ export const CV_TEMPLATES: CVTemplate[] = [
       en: 'Ultra modern black and white editorial layout with accent line and modern sans-serif fonts.'
     },
     layoutType: 'minimal-studio-black',
+    layoutFamily: 'single-column',
+    supportsSecondaryAccent: false,
     defaultAccent: '#1A202C',
     defaultFont: 'Poppins',
     badgeText: 'Modèle Photo 10'
@@ -140,6 +165,8 @@ export const CV_TEMPLATES: CVTemplate[] = [
       en: 'Royal burgundy header with gold trim and refined classic typography.'
     },
     layoutType: 'bordeaux-gold-luxury',
+    layoutFamily: 'single-column',
+    supportsSecondaryAccent: false,
     defaultAccent: '#800020',
     defaultFont: 'Georgia',
     badgeText: 'Modèle Photo 11'
@@ -153,6 +180,8 @@ export const CV_TEMPLATES: CVTemplate[] = [
       en: 'Deep emerald green canvas with rounded cards and skill level bars.'
     },
     layoutType: 'emerald-rounded-tech',
+    layoutFamily: 'single-column',
+    supportsSecondaryAccent: false,
     defaultAccent: '#064E3B',
     defaultFont: 'Arial',
     badgeText: 'Modèle Photo 12'
@@ -166,6 +195,8 @@ export const CV_TEMPLATES: CVTemplate[] = [
       en: 'Warm terracotta tones with modern diagonal header and skill badges.'
     },
     layoutType: 'terracotta-creative',
+    layoutFamily: 'single-column',
+    supportsSecondaryAccent: false,
     defaultAccent: '#C2410C',
     defaultFont: 'Montserrat',
     badgeText: 'Modèle Photo 13'
@@ -179,7 +210,10 @@ export const CV_TEMPLATES: CVTemplate[] = [
       en: 'Balanced navy and gold double column, tailored for lawyers, accountants and managers.'
     },
     layoutType: 'navy-gold-executive',
+    layoutFamily: 'two-column-left',
+    supportsSecondaryAccent: true,
     defaultAccent: '#0F172A',
+    defaultSecondaryAccent: '#D4AF37',
     defaultFont: 'Times New Roman',
     badgeText: 'Modèle Photo 14'
   },
@@ -192,7 +226,10 @@ export const CV_TEMPLATES: CVTemplate[] = [
       en: 'Soothing pastel olive sidebar, airy layout and minimal timeline.'
     },
     layoutType: 'olive-nature-engineering',
+    layoutFamily: 'two-column-left',
+    supportsSecondaryAccent: true,
     defaultAccent: '#3F6212',
+    defaultSecondaryAccent: '#ECF3E8',
     defaultFont: 'Calibri',
     badgeText: 'Modèle Photo 15'
   },
@@ -205,7 +242,10 @@ export const CV_TEMPLATES: CVTemplate[] = [
       en: 'Teal left column with progress bars and certifications, clean right main column.'
     },
     layoutType: 'sartre-teal-executive',
+    layoutFamily: 'two-column-left',
+    supportsSecondaryAccent: true,
     defaultAccent: '#237A62',
+    defaultSecondaryAccent: '#114B3B',
     defaultFont: 'Arial',
     badgeText: 'Nouveau Modèle 16'
   },
@@ -218,6 +258,8 @@ export const CV_TEMPLATES: CVTemplate[] = [
       en: 'Dark navy rounded arch header with top circular photo and clean structured profile.'
     },
     layoutType: 'durant-navy-arch',
+    layoutFamily: 'single-column',
+    supportsSecondaryAccent: false,
     defaultAccent: '#0A192F',
     defaultFont: 'Montserrat',
     badgeText: 'Nouveau Modèle 17'
@@ -231,7 +273,10 @@ export const CV_TEMPLATES: CVTemplate[] = [
       en: 'Slate left column with circular portrait, right section headers highlighted with soft gold banners.'
     },
     layoutType: 'slate-gold-banners',
+    layoutFamily: 'two-column-left',
+    supportsSecondaryAccent: true,
     defaultAccent: '#3A4750',
+    defaultSecondaryAccent: '#D4AF37',
     defaultFont: 'Inter',
     badgeText: 'Nouveau Modèle 18'
   },
@@ -244,7 +289,10 @@ export const CV_TEMPLATES: CVTemplate[] = [
       en: 'Royal blue top banner with summary and left photo, right ice-blue column with skill meters.'
     },
     layoutType: 'royal-blue-banner-grid',
+    layoutFamily: 'two-column-right',
+    supportsSecondaryAccent: true,
     defaultAccent: '#1E3A8A',
+    defaultSecondaryAccent: '#EFF6FF',
     defaultFont: 'Roboto',
     badgeText: 'Nouveau Modèle 19'
   },
@@ -257,6 +305,8 @@ export const CV_TEMPLATES: CVTemplate[] = [
       en: 'Green wave curves along the left edge, lime green titles and categorized domain skills.'
     },
     layoutType: 'michel-green-curves',
+    layoutFamily: 'single-column',
+    supportsSecondaryAccent: false,
     defaultAccent: '#65A30D',
     defaultFont: 'Trebuchet MS',
     badgeText: 'Nouveau Modèle 20'

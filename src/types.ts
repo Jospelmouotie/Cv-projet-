@@ -29,11 +29,17 @@ export interface CV {
   templateId: string;
   langue: Language;
   couleurAccent: string;
+  couleurAccentSecondaire?: string;
   police: string;
   taillePolice?: string;
+  taillePoliceValeur?: number; // 4 to 30 px
   hauteurLigne?: 'tight' | 'normal' | 'relaxed' | 'loose';
+  hauteurLigneValeur?: number; // 0.5 to 2.0
   ecartementTexte?: 'tight' | 'normal' | 'wide' | 'widest';
   margeSection?: 'compact' | 'normal' | 'spacious';
+  largeurColonneGauche?: number; // 20% to 50%
+  margeColonneGauche?: number; // 4px to 40px
+  margeColonneDroite?: number; // 4px to 40px
   photoUrl?: string;
   afficherPhoto?: boolean;
   photoForme?: 'ronde' | 'carree' | 'arrondie' | 'hexagone' | 'arche';
@@ -76,7 +82,10 @@ export interface CVTemplate {
     en: string;
   };
   layoutType: string;
+  layoutFamily?: 'single-column' | 'two-column-left' | 'two-column-right';
+  supportsSecondaryAccent?: boolean;
   defaultAccent: string;
+  defaultSecondaryAccent?: string;
   defaultFont: string;
   badgeText?: string;
 }
