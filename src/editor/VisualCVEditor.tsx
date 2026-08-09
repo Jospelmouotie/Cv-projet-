@@ -10,6 +10,7 @@ import { PropertiesPanel } from './PropertiesPanel';
 import { AIAssistantModal } from './AIAssistantModal';
 import { ATSAnalyzerModal } from './ATSAnalyzerModal';
 import { exportCVToPDF } from '../utils/pdfExport';
+import { PlusCircle, Sliders, Sparkles, FileSpreadsheet, X } from 'lucide-react';
 
 interface VisualCVEditorProps {
   cv: CV;
@@ -37,11 +38,29 @@ export const VisualCVEditor: React.FC<VisualCVEditorProps> = ({
   } = useHistory(initialDoc);
 
   const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
-  const [zoomLevel, setZoomLevel] = useState<number>(0.85);
+  const [activePageId, setActivePageId] = useState<string>(document.pages[0]?.id || 'page-1');
+
+  // Auto zoom adapting to mobile screen
+  const [zoomLevel, setZoomLevel] = useState<number>(() => {
+    if (typeof window !== 'undefined' && window.innerWidth < 640) {
+      return 0.45;
+    }
+    return 0.85;
+  });
   const [gridSnap, setGridSnap] = useState<boolean>(true);
+
+  // Mobile Bottom Sheet drawer state
+  const [mobileDrawer, setMobileDrawer] = useState<'elements' | 'properties' | null>(null);
 
   const [showAIModal, setShowAIModal] = useState(false);
   const [showATSModal, setShowATSModal] = useState(false);
+
+  // Keep activePageId valid if pages change
+  useEffect(() => {
+    if (!document.pages.some((p) => p.id === activePageId)) {
+      setActivePageId(document.pages[0]?.id || 'page-1');
+    }
+  }, [document.pages]);
 
   // Find selected element object
   let selectedElement: CVElement | null = null;
@@ -66,14 +85,18 @@ export const VisualCVEditor: React.FC<VisualCVEditorProps> = ({
     });
   };
 
-  // Handle adding new element
+  // Handle adding new element to active page
   const handleAddElement = (type: ElementType, presetContent?: any) => {
     const newId = `elem-${type}-${Date.now()}`;
+    const targetPageIdx = document.pages.findIndex((p) => p.id === activePageId);
+    const validIdx = targetPageIdx >= 0 ? targetPageIdx : 0;
+    const targetPage = document.pages[validIdx];
+
     const newElement: CVElement = {
       id: newId,
       type,
       x: 50,
-      y: 120 + (document.pages[0]?.elements.length || 0) * 30,
+      y: 100 + (targetPage?.elements.length || 0) * 35,
       width: type === 'line' ? 680 : type === 'text' ? 400 : 250,
       height: type === 'shape' ? 80 : 40,
       zIndex: 30,
@@ -90,18 +113,17 @@ export const VisualCVEditor: React.FC<VisualCVEditorProps> = ({
     };
 
     updateDocument((prevDoc) => {
-      const firstPage = prevDoc.pages[0];
-      const updatedFirstPage = {
-        ...firstPage,
-        elements: [...firstPage.elements, newElement]
-      };
-      return {
-        ...prevDoc,
-        pages: [updatedFirstPage, ...prevDoc.pages.slice(1)]
-      };
+      const updatedPages = prevDoc.pages.map((p, idx) => {
+        if (idx === validIdx) {
+          return { ...p, elements: [...p.elements, newElement] };
+        }
+        return p;
+      });
+      return { ...prevDoc, pages: updatedPages };
     });
 
     setSelectedElementId(newId);
+    setMobileDrawer(null); // Close mobile drawer after adding
   };
 
   // Handle duplicating element
@@ -169,8 +191,9 @@ export const VisualCVEditor: React.FC<VisualCVEditorProps> = ({
   // Handle adding new page
   const handleAddPage = () => {
     const newPageNum = document.pages.length + 1;
+    const newPageId = `page-${Date.now()}`;
     const newPage = {
-      id: `page-${newPageNum}`,
+      id: newPageId,
       pageNumber: newPageNum,
       width: 794,
       height: 1123,
@@ -183,6 +206,8 @@ export const VisualCVEditor: React.FC<VisualCVEditorProps> = ({
       ...prevDoc,
       pages: [...prevDoc.pages, newPage]
     }));
+
+    setActivePageId(newPageId);
   };
 
   // Handle removing page
@@ -205,7 +230,7 @@ export const VisualCVEditor: React.FC<VisualCVEditorProps> = ({
   }, [document]);
 
   return (
-    <div className="flex flex-col h-screen w-full bg-slate-100 dark:bg-slate-950 overflow-hidden">
+    <div className="flex flex-col h-screen w-full bg-slate-100 dark:bg-slate-950 overflow-hidden relative">
       
       {/* Top Toolbar */}
       <Toolbar
@@ -226,9 +251,11 @@ export const VisualCVEditor: React.FC<VisualCVEditorProps> = ({
       />
 
       {/* Main Workspace Body */}
-      <div className="flex-1 flex w-full min-h-0 overflow-hidden">
-        {/* Left Elements Sidebar */}
-        <ElementsSidebar onAddElement={handleAddElement} />
+      <div className="flex-1 flex w-full min-h-0 overflow-hidden relative">
+        {/* Desktop Left Elements Sidebar */}
+        <div className="hidden lg:block shrink-0 h-full">
+          <ElementsSidebar onAddElement={handleAddElement} />
+        </div>
 
         {/* Center Canvas */}
         <Canvas
@@ -238,21 +265,108 @@ export const VisualCVEditor: React.FC<VisualCVEditorProps> = ({
           onUpdateElement={handleUpdateElement}
           onAddPage={handleAddPage}
           onRemovePage={handleRemovePage}
+          activePageId={activePageId}
+          onSelectPage={setActivePageId}
           zoomLevel={zoomLevel}
           gridSnap={gridSnap}
         />
 
-        {/* Right Properties Panel */}
-        <PropertiesPanel
-          selectedElement={selectedElement}
-          onUpdateElement={handleUpdateElement}
-          onDuplicateElement={handleDuplicateElement}
-          onDeleteElement={handleDeleteElement}
-          onAlignElement={handleAlignElement}
-          pageWidth={document.pages[0]?.width || 794}
-          pageHeight={document.pages[0]?.height || 1123}
-        />
+        {/* Desktop Right Properties Panel */}
+        <div className="hidden lg:block shrink-0 h-full">
+          <PropertiesPanel
+            selectedElement={selectedElement}
+            onUpdateElement={handleUpdateElement}
+            onDuplicateElement={handleDuplicateElement}
+            onDeleteElement={handleDeleteElement}
+            onAlignElement={handleAlignElement}
+            pageWidth={document.pages[0]?.width || 794}
+            pageHeight={document.pages[0]?.height || 1123}
+          />
+        </div>
       </div>
+
+      {/* Mobile Bottom Navigation Bar (< lg screens) */}
+      <div className="lg:hidden bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 px-4 py-2 flex items-center justify-around z-40 shrink-0 shadow-lg">
+        <button
+          onClick={() => setMobileDrawer(mobileDrawer === 'elements' ? null : 'elements')}
+          className={`flex flex-col items-center space-y-1 text-[11px] font-bold p-1 rounded-xl transition-colors cursor-pointer ${
+            mobileDrawer === 'elements' ? 'text-blue-600' : 'text-slate-600 dark:text-slate-400'
+          }`}
+        >
+          <PlusCircle className="w-5 h-5" />
+          <span>+ Éléments</span>
+        </button>
+
+        <button
+          onClick={() => setMobileDrawer(mobileDrawer === 'properties' ? null : 'properties')}
+          className={`flex flex-col items-center space-y-1 text-[11px] font-bold p-1 rounded-xl transition-colors cursor-pointer ${
+            mobileDrawer === 'properties' ? 'text-blue-600' : 'text-slate-600 dark:text-slate-400'
+          }`}
+        >
+          <Sliders className="w-5 h-5" />
+          <span>Propriétés</span>
+        </button>
+
+        <button
+          onClick={() => setShowAIModal(true)}
+          className="flex flex-col items-center space-y-1 text-[11px] font-bold text-indigo-600 dark:text-indigo-400 p-1 rounded-xl cursor-pointer"
+        >
+          <Sparkles className="w-5 h-5" />
+          <span>IA Gemini</span>
+        </button>
+
+        <button
+          onClick={() => setShowATSModal(true)}
+          className="flex flex-col items-center space-y-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400 p-1 rounded-xl cursor-pointer"
+        >
+          <FileSpreadsheet className="w-5 h-5" />
+          <span>Score ATS</span>
+        </button>
+      </div>
+
+      {/* Mobile Bottom Drawer for Elements */}
+      {mobileDrawer === 'elements' && (
+        <div className="lg:hidden fixed inset-x-0 bottom-12 z-50 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 shadow-2xl rounded-t-3xl max-h-[60vh] overflow-y-auto p-4 animate-in slide-in-from-bottom duration-200">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800 mb-2">
+            <span className="text-xs font-black uppercase text-slate-800 dark:text-slate-200">
+              Ajouter des éléments au CV
+            </span>
+            <button
+              onClick={() => setMobileDrawer(null)}
+              className="p-1 text-slate-400 hover:text-slate-700 dark:hover:text-white rounded-lg cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          <ElementsSidebar onAddElement={handleAddElement} />
+        </div>
+      )}
+
+      {/* Mobile Bottom Drawer for Properties */}
+      {mobileDrawer === 'properties' && (
+        <div className="lg:hidden fixed inset-x-0 bottom-12 z-50 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 shadow-2xl rounded-t-3xl max-h-[65vh] overflow-y-auto p-4 animate-in slide-in-from-bottom duration-200">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800 mb-2">
+            <span className="text-xs font-black uppercase text-slate-800 dark:text-slate-200">
+              Propriétés de l'élément sélectionné
+            </span>
+            <button
+              onClick={() => setMobileDrawer(null)}
+              className="p-1 text-slate-400 hover:text-slate-700 dark:hover:text-white rounded-lg cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          <PropertiesPanel
+            selectedElement={selectedElement}
+            onUpdateElement={handleUpdateElement}
+            onDuplicateElement={handleDuplicateElement}
+            onDeleteElement={handleDeleteElement}
+            onAlignElement={handleAlignElement}
+            pageWidth={document.pages[0]?.width || 794}
+            pageHeight={document.pages[0]?.height || 1123}
+          />
+        </div>
+      )}
 
       {/* Modals */}
       {showAIModal && (
