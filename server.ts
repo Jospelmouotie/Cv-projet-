@@ -513,11 +513,64 @@ function getGemini(): GoogleGenAI | null {
   return geminiAi;
 }
 
+// Simple in-memory cache for spellcheck to minimize Gemini API calls
+const spellcheckCache = new Map<string, any>();
+const MAX_CACHE_SIZE = 300;
+
+function getCachedCorrection(key: string) {
+  return spellcheckCache.get(key);
+}
+
+function setCachedCorrection(key: string, val: any) {
+  if (spellcheckCache.size >= MAX_CACHE_SIZE) {
+    const firstKey = spellcheckCache.keys().next().value;
+    if (firstKey) spellcheckCache.delete(firstKey);
+  }
+  spellcheckCache.set(key, val);
+}
+
+async function generateGeminiContentWithFallback(ai: GoogleGenAI, prompt: string) {
+  const modelsToTry = ['gemini-2.0-flash', 'gemini-2.5-flash', 'gemini-1.5-flash'];
+  let lastError: any = null;
+
+  for (const model of modelsToTry) {
+    try {
+      const response = await ai.models.generateContent({
+        model,
+        contents: prompt,
+        config: {
+          responseMimeType: 'application/json'
+        }
+      });
+      return response.text || '{}';
+    } catch (err: any) {
+      lastError = err;
+      const isQuota = err?.status === 'RESOURCE_EXHAUSTED' ||
+                      err?.status === 429 ||
+                      err?.message?.includes('429') ||
+                      err?.message?.includes('Quota exceeded');
+      if (isQuota) {
+        console.warn(`[Gemini] Model ${model} rate limited or quota exceeded, trying fallback model...`);
+        continue;
+      }
+      throw err;
+    }
+  }
+
+  throw lastError;
+}
+
 app.post('/api/correction', async (req, res) => {
   const { texte, langue = 'fr' } = req.body;
 
   if (!texte || typeof texte !== 'string' || texte.trim().length === 0) {
     return res.json({ erreurs: [] });
+  }
+
+  const cacheKey = `${langue}:${texte.trim()}`;
+  const cached = getCachedCorrection(cacheKey);
+  if (cached) {
+    return res.json({ erreurs: cached });
   }
 
   const ai = getGemini();
@@ -550,22 +603,28 @@ Ne rajoute aucun texte avant ou après le JSON.
 Texte à analyser:
 "${texte.replace(/"/g, '\\"')}"`;
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: prompt,
-      config: {
-        responseMimeType: 'application/json'
-      }
-    });
+    const responseText = await generateGeminiContentWithFallback(ai, prompt);
+    const parsed = JSON.parse(responseText || '{}');
+    const erreurs = Array.isArray(parsed.erreurs) ? parsed.erreurs : [];
 
-    const responseText = response.text || '{}';
-    const parsed = JSON.parse(responseText);
+    setCachedCorrection(cacheKey, erreurs);
 
-    res.json({
-      erreurs: Array.isArray(parsed.erreurs) ? parsed.erreurs : []
-    });
+    res.json({ erreurs });
   } catch (err: any) {
-    console.error('Gemini spellcheck API error:', err);
+    const isQuota = err?.status === 'RESOURCE_EXHAUSTED' ||
+                    err?.status === 429 ||
+                    err?.message?.includes('429') ||
+                    err?.message?.includes('Quota exceeded');
+
+    if (isQuota) {
+      console.warn('Gemini spellcheck API quota/rate limit reached. Returning fallback response.');
+      return res.json({
+        erreurs: [],
+        warning: 'Quota d\'analyse orthographique temporairement atteint.'
+      });
+    }
+
+    console.error('Gemini spellcheck error:', err?.message || err);
     res.json({
       erreurs: [],
       warning: 'Erreur lors de la vérification orthographique par IA.'
@@ -606,19 +665,25 @@ Retourne un JSON avec cette structure:
 
 CV: ${JSON.stringify(cv).slice(0, 8000)}`;
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: prompt,
-      config: {
-        responseMimeType: 'application/json'
-      }
-    });
-
-    const parsed = JSON.parse(response.text || '{}');
+    const responseText = await generateGeminiContentWithFallback(ai, prompt);
+    const parsed = JSON.parse(responseText || '{}');
     res.json(parsed);
   } catch (err: any) {
-    console.error('Error correcting entire CV with Gemini:', err);
-    res.json({ correctionsGlobales: [], error: err.message });
+    const isQuota = err?.status === 'RESOURCE_EXHAUSTED' ||
+                    err?.status === 429 ||
+                    err?.message?.includes('429') ||
+                    err?.message?.includes('Quota exceeded');
+
+    if (isQuota) {
+      console.warn('Gemini CV correction API quota/rate limit reached.');
+      return res.json({
+        correctionsGlobales: [],
+        warning: 'Quota d\'analyse IA temporairement atteint.'
+      });
+    }
+
+    console.error('Error correcting entire CV with Gemini:', err?.message || err);
+    res.json({ correctionsGlobales: [], error: err?.message || 'Erreur inconnue' });
   }
 });
 

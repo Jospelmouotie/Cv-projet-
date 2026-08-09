@@ -40,6 +40,14 @@ export function cssColorToRgbString(cssColor: string): string {
 }
 
 /**
+ * Replaces any oklch(...) occurrences within a string (e.g. style declarations, box-shadows, css rules)
+ */
+export function replaceOklchInString(str: string): string {
+  if (!str || typeof str !== 'string' || !str.includes('oklch')) return str;
+  return str.replace(/oklch\([^)]+\)/gi, (match) => cssColorToRgbString(match));
+}
+
+/**
  * Parses Hex color to RGB
  */
 export function hexToRgb(hex: string): { r: number; g: number; b: number } {
@@ -143,6 +151,21 @@ export function getAccentShades(primaryHex: string, secondaryHex?: string): Colo
   };
 }
 
+const COLOR_PROPS = [
+  'backgroundColor',
+  'color',
+  'borderColor',
+  'borderTopColor',
+  'borderRightColor',
+  'borderBottomColor',
+  'borderLeftColor',
+  'outlineColor',
+  'fill',
+  'stroke',
+  'boxShadow',
+  'textDecorationColor'
+] as const;
+
 /**
  * Replaces modern CSS colors (oklch, etc.) in a DOM tree with computed RGB colors
  * to prevent html2canvas parsing crashes.
@@ -154,20 +177,18 @@ export function sanitizeDomColorsForCanvas(element: HTMLElement): () => void {
     if (!node || node.nodeType !== Node.ELEMENT_NODE) return;
     try {
       const computed = window.getComputedStyle(node);
-      const bg = computed.backgroundColor;
-      const color = computed.color;
-      const border = computed.borderColor;
+      let modified = false;
 
-      const needsBgFix = bg && bg.includes('oklch');
-      const needsColorFix = color && color.includes('oklch');
-      const needsBorderFix = border && border.includes('oklch');
-
-      if (needsBgFix || needsColorFix || needsBorderFix) {
-        originalStyles.push({ el: node, style: node.getAttribute('style') || '' });
-        if (needsBgFix) node.style.backgroundColor = cssColorToRgbString(bg);
-        if (needsColorFix) node.style.color = cssColorToRgbString(color);
-        if (needsBorderFix) node.style.borderColor = cssColorToRgbString(border);
-      }
+      COLOR_PROPS.forEach((prop) => {
+        const val = computed[prop as any];
+        if (val && typeof val === 'string' && val.includes('oklch')) {
+          if (!modified) {
+            originalStyles.push({ el: node, style: node.getAttribute('style') || '' });
+            modified = true;
+          }
+          (node.style as any)[prop] = replaceOklchInString(val);
+        }
+      });
     } catch {
       // Ignore non-styleable elements
     }

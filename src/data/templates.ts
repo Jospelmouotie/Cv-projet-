@@ -15,7 +15,17 @@ export const CV_TEMPLATES: CVTemplate[] = [
     defaultAccent: '#006666',
     defaultSecondaryAccent: '#E6F0F2',
     defaultFont: 'Inter',
-    badgeText: 'Modèle Photo 1'
+    badgeText: 'Modèle Photo 1',
+    themeConfig: {
+      primaryColor: '#006666',
+      secondaryColor: '#E6F0F2',
+      sidebarBackgroundColor: '#E6F0F2',
+      backgroundColor: '#FFFFFF',
+      headerStyle: 'banner',
+      sectionHeaderStyle: 'underline',
+      skillsDisplayMode: 'grid',
+      experienceDatesAlignment: 'left'
+    }
   },
   {
     id: 'modele-2',
@@ -31,7 +41,18 @@ export const CV_TEMPLATES: CVTemplate[] = [
     defaultAccent: '#381A3C',
     defaultSecondaryAccent: '#EADDF0',
     defaultFont: 'Playfair Display',
-    badgeText: 'Modèle Photo 2'
+    badgeText: 'Modèle Photo 2',
+    themeConfig: {
+      primaryColor: '#381A3C',
+      secondaryColor: '#EADDF0',
+      sidebarBackgroundColor: '#381A3C',
+      sidebarTextColor: '#FFFFFF',
+      backgroundColor: '#FFFFFF',
+      headerStyle: 'arch',
+      sectionHeaderStyle: 'pill',
+      skillsDisplayMode: 'badges',
+      experienceDatesAlignment: 'inline'
+    }
   },
   {
     id: 'modele-3',
@@ -47,7 +68,18 @@ export const CV_TEMPLATES: CVTemplate[] = [
     defaultAccent: '#00B4D8',
     defaultSecondaryAccent: '#22252A',
     defaultFont: 'Outfit',
-    badgeText: 'Modèle Photo 3'
+    badgeText: 'Modèle Photo 3',
+    themeConfig: {
+      primaryColor: '#00B4D8',
+      secondaryColor: '#22252A',
+      sidebarBackgroundColor: '#22252A',
+      sidebarTextColor: '#FFFFFF',
+      backgroundColor: '#FFFFFF',
+      headerStyle: 'modern-split',
+      sectionHeaderStyle: 'left-border',
+      skillsDisplayMode: 'progress',
+      experienceDatesAlignment: 'left'
+    }
   },
   {
     id: 'modele-4',
@@ -62,7 +94,16 @@ export const CV_TEMPLATES: CVTemplate[] = [
     supportsSecondaryAccent: false,
     defaultAccent: '#522166',
     defaultFont: 'Inter',
-    badgeText: 'Modèle Photo 4'
+    badgeText: 'Modèle Photo 4',
+    themeConfig: {
+      primaryColor: '#522166',
+      secondaryColor: '#F3E8FF',
+      backgroundColor: '#FFFFFF',
+      headerStyle: 'clean',
+      sectionHeaderStyle: 'boxed',
+      skillsDisplayMode: 'grid',
+      experienceDatesAlignment: 'top'
+    }
   },
   {
     id: 'modele-5',
@@ -77,7 +118,16 @@ export const CV_TEMPLATES: CVTemplate[] = [
     supportsSecondaryAccent: false,
     defaultAccent: '#3B8B88',
     defaultFont: 'Lato',
-    badgeText: 'Modèle Photo 5'
+    badgeText: 'Modèle Photo 5',
+    themeConfig: {
+      primaryColor: '#3B8B88',
+      secondaryColor: '#E6F4F1',
+      backgroundColor: '#F0FDF4',
+      headerStyle: 'clean',
+      sectionHeaderStyle: 'double-line',
+      skillsDisplayMode: 'progress',
+      experienceDatesAlignment: 'inline'
+    }
   },
   {
     id: 'modele-6',
@@ -92,7 +142,16 @@ export const CV_TEMPLATES: CVTemplate[] = [
     supportsSecondaryAccent: false,
     defaultAccent: '#1D3557',
     defaultFont: 'Inter',
-    badgeText: 'Modèle Photo 6'
+    badgeText: 'Modèle Photo 6',
+    themeConfig: {
+      primaryColor: '#1D3557',
+      secondaryColor: '#F0F4F8',
+      backgroundColor: '#FFFFFF',
+      headerStyle: 'banner',
+      sectionHeaderStyle: 'banner',
+      skillsDisplayMode: 'progress',
+      experienceDatesAlignment: 'left'
+    }
   },
   {
     id: 'modele-7',
@@ -108,7 +167,17 @@ export const CV_TEMPLATES: CVTemplate[] = [
     defaultAccent: '#D8C3A5',
     defaultSecondaryAccent: '#E8DED1',
     defaultFont: 'Playfair Display',
-    badgeText: 'Modèle Photo 7'
+    badgeText: 'Modèle Photo 7',
+    themeConfig: {
+      primaryColor: '#D8C3A5',
+      secondaryColor: '#E8DED1',
+      sidebarBackgroundColor: '#E8DED1',
+      backgroundColor: '#FFFFFF',
+      headerStyle: 'arch',
+      sectionHeaderStyle: 'stars',
+      skillsDisplayMode: 'badges',
+      experienceDatesAlignment: 'inline'
+    }
   },
   {
     id: 'modele-8',
@@ -124,7 +193,18 @@ export const CV_TEMPLATES: CVTemplate[] = [
     defaultAccent: '#1B2A4A',
     defaultSecondaryAccent: '#F4A261',
     defaultFont: 'Outfit',
-    badgeText: 'Modèle Photo 8'
+    badgeText: 'Modèle Photo 8',
+    themeConfig: {
+      primaryColor: '#1B2A4A',
+      secondaryColor: '#F4A261',
+      sidebarBackgroundColor: '#1B2A4A',
+      sidebarTextColor: '#FFFFFF',
+      backgroundColor: '#FFFFFF',
+      headerStyle: 'modern-split',
+      sectionHeaderStyle: 'left-border',
+      skillsDisplayMode: 'grid',
+      experienceDatesAlignment: 'left'
+    }
   },
   {
     id: 'modele-9',
@@ -139,7 +219,16 @@ export const CV_TEMPLATES: CVTemplate[] = [
     supportsSecondaryAccent: false,
     defaultAccent: '#2D3748',
     defaultFont: 'Roboto',
-    badgeText: 'Modèle Photo 9'
+    badgeText: 'Modèle Photo 9',
+    themeConfig: {
+      primaryColor: '#2D3748',
+      secondaryColor: '#EDF2F7',
+      backgroundColor: '#FFFFFF',
+      headerStyle: 'banner',
+      sectionHeaderStyle: 'underline',
+      skillsDisplayMode: 'grid',
+      experienceDatesAlignment: 'left'
+    }
   },
   {
     id: 'modele-10',
@@ -154,7 +243,16 @@ export const CV_TEMPLATES: CVTemplate[] = [
     supportsSecondaryAccent: false,
     defaultAccent: '#1A202C',
     defaultFont: 'Poppins',
-    badgeText: 'Modèle Photo 10'
+    badgeText: 'Modèle Photo 10',
+    themeConfig: {
+      primaryColor: '#1A202C',
+      secondaryColor: '#F7FAFC',
+      backgroundColor: '#FFFFFF',
+      headerStyle: 'clean',
+      sectionHeaderStyle: 'minimal',
+      skillsDisplayMode: 'badges',
+      experienceDatesAlignment: 'inline'
+    }
   },
   {
     id: 'modele-11',
@@ -169,7 +267,16 @@ export const CV_TEMPLATES: CVTemplate[] = [
     supportsSecondaryAccent: false,
     defaultAccent: '#800020',
     defaultFont: 'Georgia',
-    badgeText: 'Modèle Photo 11'
+    badgeText: 'Modèle Photo 11',
+    themeConfig: {
+      primaryColor: '#800020',
+      secondaryColor: '#FDF2F2',
+      backgroundColor: '#FFFFFF',
+      headerStyle: 'banner',
+      sectionHeaderStyle: 'double-line',
+      skillsDisplayMode: 'grid',
+      experienceDatesAlignment: 'left'
+    }
   },
   {
     id: 'modele-12',
@@ -184,7 +291,16 @@ export const CV_TEMPLATES: CVTemplate[] = [
     supportsSecondaryAccent: false,
     defaultAccent: '#064E3B',
     defaultFont: 'Arial',
-    badgeText: 'Modèle Photo 12'
+    badgeText: 'Modèle Photo 12',
+    themeConfig: {
+      primaryColor: '#064E3B',
+      secondaryColor: '#ECFDF5',
+      backgroundColor: '#FFFFFF',
+      headerStyle: 'clean',
+      sectionHeaderStyle: 'pill',
+      skillsDisplayMode: 'progress',
+      experienceDatesAlignment: 'left'
+    }
   },
   {
     id: 'modele-13',
@@ -199,7 +315,16 @@ export const CV_TEMPLATES: CVTemplate[] = [
     supportsSecondaryAccent: false,
     defaultAccent: '#C2410C',
     defaultFont: 'Montserrat',
-    badgeText: 'Modèle Photo 13'
+    badgeText: 'Modèle Photo 13',
+    themeConfig: {
+      primaryColor: '#C2410C',
+      secondaryColor: '#FFEDD5',
+      backgroundColor: '#FFFFFF',
+      headerStyle: 'banner',
+      sectionHeaderStyle: 'pill',
+      skillsDisplayMode: 'badges',
+      experienceDatesAlignment: 'inline'
+    }
   },
   {
     id: 'modele-14',
@@ -215,7 +340,18 @@ export const CV_TEMPLATES: CVTemplate[] = [
     defaultAccent: '#0F172A',
     defaultSecondaryAccent: '#D4AF37',
     defaultFont: 'Times New Roman',
-    badgeText: 'Modèle Photo 14'
+    badgeText: 'Modèle Photo 14',
+    themeConfig: {
+      primaryColor: '#0F172A',
+      secondaryColor: '#FEF3C7',
+      sidebarBackgroundColor: '#0F172A',
+      sidebarTextColor: '#FFFFFF',
+      backgroundColor: '#FFFFFF',
+      headerStyle: 'banner',
+      sectionHeaderStyle: 'double-line',
+      skillsDisplayMode: 'grid',
+      experienceDatesAlignment: 'left'
+    }
   },
   {
     id: 'modele-15',
@@ -231,7 +367,17 @@ export const CV_TEMPLATES: CVTemplate[] = [
     defaultAccent: '#3F6212',
     defaultSecondaryAccent: '#ECF3E8',
     defaultFont: 'Calibri',
-    badgeText: 'Modèle Photo 15'
+    badgeText: 'Modèle Photo 15',
+    themeConfig: {
+      primaryColor: '#3F6212',
+      secondaryColor: '#ECF3E8',
+      sidebarBackgroundColor: '#ECF3E8',
+      backgroundColor: '#FFFFFF',
+      headerStyle: 'clean',
+      sectionHeaderStyle: 'left-border',
+      skillsDisplayMode: 'progress',
+      experienceDatesAlignment: 'left'
+    }
   },
   {
     id: 'modele-16',
@@ -247,7 +393,18 @@ export const CV_TEMPLATES: CVTemplate[] = [
     defaultAccent: '#237A62',
     defaultSecondaryAccent: '#114B3B',
     defaultFont: 'Arial',
-    badgeText: 'Nouveau Modèle 16'
+    badgeText: 'Nouveau Modèle 16',
+    themeConfig: {
+      primaryColor: '#237A62',
+      secondaryColor: '#E6F4F1',
+      sidebarBackgroundColor: '#237A62',
+      sidebarTextColor: '#FFFFFF',
+      backgroundColor: '#FFFFFF',
+      headerStyle: 'banner',
+      sectionHeaderStyle: 'underline',
+      skillsDisplayMode: 'progress',
+      experienceDatesAlignment: 'left'
+    }
   },
   {
     id: 'modele-17',
@@ -262,7 +419,16 @@ export const CV_TEMPLATES: CVTemplate[] = [
     supportsSecondaryAccent: false,
     defaultAccent: '#0A192F',
     defaultFont: 'Montserrat',
-    badgeText: 'Nouveau Modèle 17'
+    badgeText: 'Nouveau Modèle 17',
+    themeConfig: {
+      primaryColor: '#0A192F',
+      secondaryColor: '#E2E8F0',
+      backgroundColor: '#FFFFFF',
+      headerStyle: 'arch',
+      sectionHeaderStyle: 'left-border',
+      skillsDisplayMode: 'grid',
+      experienceDatesAlignment: 'left'
+    }
   },
   {
     id: 'modele-18',
@@ -278,7 +444,18 @@ export const CV_TEMPLATES: CVTemplate[] = [
     defaultAccent: '#3A4750',
     defaultSecondaryAccent: '#D4AF37',
     defaultFont: 'Inter',
-    badgeText: 'Nouveau Modèle 18'
+    badgeText: 'Nouveau Modèle 18',
+    themeConfig: {
+      primaryColor: '#3A4750',
+      secondaryColor: '#FEF3C7',
+      sidebarBackgroundColor: '#3A4750',
+      sidebarTextColor: '#FFFFFF',
+      backgroundColor: '#FFFFFF',
+      headerStyle: 'banner',
+      sectionHeaderStyle: 'banner',
+      skillsDisplayMode: 'grid',
+      experienceDatesAlignment: 'left'
+    }
   },
   {
     id: 'modele-19',
@@ -294,7 +471,17 @@ export const CV_TEMPLATES: CVTemplate[] = [
     defaultAccent: '#1E3A8A',
     defaultSecondaryAccent: '#EFF6FF',
     defaultFont: 'Roboto',
-    badgeText: 'Nouveau Modèle 19'
+    badgeText: 'Nouveau Modèle 19',
+    themeConfig: {
+      primaryColor: '#1E3A8A',
+      secondaryColor: '#EFF6FF',
+      sidebarBackgroundColor: '#EFF6FF',
+      backgroundColor: '#FFFFFF',
+      headerStyle: 'banner',
+      sectionHeaderStyle: 'underline',
+      skillsDisplayMode: 'progress',
+      experienceDatesAlignment: 'left'
+    }
   },
   {
     id: 'modele-20',
@@ -309,7 +496,16 @@ export const CV_TEMPLATES: CVTemplate[] = [
     supportsSecondaryAccent: false,
     defaultAccent: '#65A30D',
     defaultFont: 'Trebuchet MS',
-    badgeText: 'Nouveau Modèle 20'
+    badgeText: 'Nouveau Modèle 20',
+    themeConfig: {
+      primaryColor: '#65A30D',
+      secondaryColor: '#ECFDF5',
+      backgroundColor: '#FFFFFF',
+      headerStyle: 'clean',
+      sectionHeaderStyle: 'left-border',
+      skillsDisplayMode: 'badges',
+      experienceDatesAlignment: 'inline'
+    }
   }
 ];
 

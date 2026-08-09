@@ -1,7 +1,7 @@
 import html2canvas from 'html2canvas';
 import { toPng } from 'html-to-image';
 import { jsPDF } from 'jspdf';
-import { sanitizeDomColorsForCanvas } from './colorUtils';
+import { sanitizeDomColorsForCanvas, replaceOklchInString } from './colorUtils';
 
 export interface ExportResult {
   success: boolean;
@@ -95,7 +95,43 @@ async function captureElementToCanvas(element: HTMLElement): Promise<HTMLCanvasE
       logging: false,
       backgroundColor: '#ffffff',
       ignoreElements: (el) => el.classList.contains('print:hidden'),
-      onclone: (_clonedDoc, clonedEl) => {
+      onclone: (clonedDoc, clonedEl) => {
+        // Sanitize oklch from all <style> elements in cloned document
+        if (clonedDoc) {
+          const styleElements = clonedDoc.querySelectorAll('style');
+          styleElements.forEach((styleTag) => {
+            if (styleTag.textContent && styleTag.textContent.includes('oklch')) {
+              styleTag.textContent = replaceOklchInString(styleTag.textContent);
+            }
+          });
+
+          // Sanitize CSS rules in document stylesheets
+          try {
+            Array.from(clonedDoc.styleSheets).forEach((sheet) => {
+              try {
+                const rules = sheet.cssRules || (sheet as any).rules;
+                if (rules) {
+                  Array.from(rules).forEach((rule: any) => {
+                    if (rule.style && rule.cssText && rule.cssText.includes('oklch')) {
+                      for (let i = 0; i < rule.style.length; i++) {
+                        const prop = rule.style[i];
+                        const val = rule.style.getPropertyValue(prop);
+                        if (val && val.includes('oklch')) {
+                          rule.style.setProperty(prop, replaceOklchInString(val));
+                        }
+                      }
+                    }
+                  });
+                }
+              } catch {
+                // Ignore cross-origin stylesheet restrictions
+              }
+            });
+          } catch {
+            // Ignore
+          }
+        }
+
         if (clonedEl instanceof HTMLElement) {
           clonedEl.style.transform = 'none';
           clonedEl.style.margin = '0';

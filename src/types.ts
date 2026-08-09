@@ -19,7 +19,44 @@ export interface Section {
   ordre: number;
   visible: boolean;
   colonne?: 'gauche' | 'droite' | 'principale';
+  isExpanded?: boolean; // accordion state
   contenu: any; // Dynamic content based on section type
+  // Optional individual section style overrides
+  styleSection?: {
+    couleurFond?: string;
+    couleurTexte?: string;
+    couleurTitre?: string;
+    styleEntete?: 'underline' | 'pill' | 'banner' | 'left-border' | 'minimal' | 'boxed' | 'stars' | 'double-line';
+    styleCompetences?: 'grid' | 'list' | 'badges' | 'progress';
+    alignementDates?: 'left' | 'top' | 'inline';
+    rayonBordure?: number;
+    epaisseurBordure?: number;
+    ombre?: 'none' | 'sm' | 'md' | 'lg';
+  };
+}
+
+export interface CVTheme {
+  primaryColor: string; // couleurPrincipale / couleurAccent
+  secondaryColor?: string;
+  backgroundColor?: string;
+  sidebarBackgroundColor?: string;
+  textColor?: string;
+  sidebarTextColor?: string;
+  headingColor?: string;
+  sidebarHeadingColor?: string;
+  headerStyle?: 'banner' | 'clean' | 'card' | 'arch' | 'modern-split' | 'minimal' | 'luxury-gold' | 'ocean-wave';
+  sectionHeaderStyle?: 'underline' | 'pill' | 'banner' | 'left-border' | 'minimal' | 'boxed' | 'stars' | 'double-line';
+  separatorStyle?: 'solid' | 'dashed' | 'dotted' | 'thick' | 'none';
+  skillsDisplayMode?: 'grid' | 'list' | 'badges' | 'progress';
+  experienceDatesAlignment?: 'left' | 'top' | 'inline';
+  borderRadiusVal?: number;
+  borderWidthVal?: number;
+  shadowVal?: 'none' | 'sm' | 'md' | 'lg';
+  pageMarginVal?: number;
+  columnGapVal?: number;
+  photoFrameStyle?: 'ronde' | 'carree' | 'arrondie' | 'hexagone' | 'arche';
+  photoBorderColor?: string;
+  photoBorderWidth?: number;
 }
 
 export interface CV {
@@ -30,7 +67,41 @@ export interface CV {
   langue: Language;
   couleurAccent: string;
   couleurAccentSecondaire?: string;
+  // Theme & Layout Overrides for Mode Créateur Libre
+  couleurFond?: string;
+  couleurFondSidebar?: string;
+  couleurTexte?: string;
+  couleurTexteSidebar?: string;
+  couleurTitreSection?: string;
+  couleurTitreSectionSidebar?: string;
+  styleEnTete?: 'banner' | 'clean' | 'card' | 'arch' | 'modern-split' | 'minimal' | 'luxury-gold' | 'ocean-wave';
+  styleEnTeteSection?: 'underline' | 'pill' | 'banner' | 'left-border' | 'minimal' | 'boxed' | 'stars' | 'double-line';
+  styleCompetences?: 'grid' | 'list' | 'badges' | 'progress' | 'stars' | 'tags';
+  stylePucesListes?: 'disc' | 'square' | 'arrow' | 'check' | 'star' | 'dash' | 'numbered' | 'none';
+  alignementDatesExperience?: 'left' | 'top' | 'inline';
+  nombreColonnes?: 1 | 2;
+  positionSidebar?: 'gauche' | 'droite';
+  rayonBordure?: number;
+  epaisseurBordure?: number;
+  ombreCarte?: 'none' | 'sm' | 'md' | 'lg';
+  margeGlobalePage?: number;
+  ecartColonnes?: number;
+  photoBordureCouleur?: string;
+  photoBordureEpaisseur?: number;
+
+  // Mode Page Cible & Compactage Automatique
+  pageCibleMode?: 'auto' | '1_page' | '2_pages' | 'compact';
+  espacementSectionsPx?: number; // 0 to 30 px
+  espacementItemsPx?: number; // 0 to 20 px
+
+  // Titres de Sections Personnalisés
+  tailleTitreSectionValeur?: number; // 8 to 26 pt
+  casseTitreSection?: 'uppercase' | 'capitalize' | 'normal';
+  alignementTitreSection?: 'left' | 'center' | 'right';
+  grasTitreSection?: 'bold' | 'black' | 'medium' | 'normal';
+
   police: string;
+  policeTitre?: string;
   taillePolice?: string;
   taillePoliceValeur?: number; // 4 to 30 px
   hauteurLigne?: 'tight' | 'normal' | 'relaxed' | 'loose';
@@ -52,6 +123,14 @@ export interface CV {
   statutPaiement: StatutPaiement;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface CustomPreset {
+  id: string;
+  name: string;
+  description?: string;
+  updatedAt: string;
+  cvData: Partial<CV>;
 }
 
 export interface Payment {
@@ -88,6 +167,8 @@ export interface CVTemplate {
   defaultSecondaryAccent?: string;
   defaultFont: string;
   badgeText?: string;
+  // Unified Theme Definition Preset
+  themeConfig?: CVTheme;
 }
 
 // Section data interfaces

@@ -29,7 +29,7 @@ export const SpellCheckField: React.FC<SpellCheckFieldProps> = ({
 
   // Debounced AI spellcheck call on value change
   useEffect(() => {
-    if (!value || value.trim().length < 5) {
+    if (!value || value.trim().length < 8) {
       setAiErrors([]);
       return;
     }
@@ -39,7 +39,7 @@ export const SpellCheckField: React.FC<SpellCheckFieldProps> = ({
       const errors = await checkTextWithAi(value, langue);
       setAiErrors(errors);
       setLoadingAi(false);
-    }, 750);
+    }, 1200);
 
     return () => clearTimeout(timer);
   }, [value, langue]);
