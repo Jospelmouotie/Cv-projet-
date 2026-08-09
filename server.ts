@@ -1,6 +1,10 @@
 import express from 'express';
 import path from 'path';
 import fs from 'fs';
+import multer from 'multer';
+import * as pdfParseModule from 'pdf-parse';
+const pdfParse = (pdfParseModule as any).default || pdfParseModule;
+import mammoth from 'mammoth';
 import { createServer as createViteServer } from 'vite';
 import { TEMPLATE_PRESETS, getPresetForTemplate } from './src/data/templatePresets';
 
@@ -8,6 +12,12 @@ const app = express();
 const PORT = 3000;
 
 app.use(express.json({ limit: '25mb' }));
+
+// File upload configuration for CV import (memory storage)
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 15 * 1024 * 1024 } // 15MB
+});
 
 // Ensure database file exists
 const DB_FILE = path.join(process.cwd(), 'data', 'db.json');
@@ -225,6 +235,58 @@ function saveDB(data: DB) {
 // -------------------------------------------------------------
 // API ROUTES
 // -------------------------------------------------------------
+
+// Document Parsing Route for CV Import (PDF & DOCX)
+app.post('/api/import/parse', upload.single('file'), async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: 'Aucun fichier reçu.' });
+  }
+
+  const file = req.file;
+  const fileName = file.originalname || 'document';
+  const ext = path.extname(fileName).toLowerCase();
+
+  try {
+    let extractedText = '';
+
+    if (ext === '.pdf' || file.mimetype === 'application/pdf') {
+      const pdfData = await pdfParse(file.buffer);
+      extractedText = pdfData.text || '';
+    } else if (ext === '.docx' || file.mimetype.includes('wordprocessingml') || file.mimetype.includes('msword')) {
+      const result = await mammoth.extractRawText({ buffer: file.buffer });
+      extractedText = result.value || '';
+    } else if (ext === '.txt' || file.mimetype.includes('text/plain')) {
+      extractedText = file.buffer.toString('utf-8');
+    } else {
+      return res.status(400).json({
+        error: 'Format non supporté. Veuillez importer un fichier .pdf, .docx ou .txt.'
+      });
+    }
+
+    // Clean up non-printable control characters while preserving lines
+    extractedText = extractedText
+      .replace(/\r\n/g, '\n')
+      .replace(/[ \t]+/g, ' ')
+      .trim();
+
+    if (!extractedText || extractedText.length < 20) {
+      return res.status(400).json({
+        error: 'Impossible d\'extraire le texte de ce fichier. S\'il s\'agit d\'un document scanné ou basé sur des images (sans couche texte), veuillez sélectionner un fichier vectoriel ou copier/coller votre texte.'
+      });
+    }
+
+    res.json({
+      text: extractedText,
+      fileName,
+      characterCount: extractedText.length
+    });
+  } catch (err: any) {
+    console.error('Error parsing document file:', err?.message || err);
+    res.status(500).json({
+      error: 'Erreur lors de l\'extraction du texte du document. Le fichier est peut-être corrompu ou protégé.'
+    });
+  }
+});
 
 // Auth Routes
 app.post('/api/auth/register', (req, res) => {
@@ -530,7 +592,7 @@ function setCachedCorrection(key: string, val: any) {
 }
 
 async function generateGeminiContentWithFallback(ai: GoogleGenAI, prompt: string) {
-  const modelsToTry = ['gemini-2.0-flash', 'gemini-2.5-flash', 'gemini-1.5-flash'];
+  const modelsToTry = ['gemini-2.5-flash', 'gemini-2.0-flash'];
   let lastError: any = null;
 
   for (const model of modelsToTry) {
@@ -545,12 +607,18 @@ async function generateGeminiContentWithFallback(ai: GoogleGenAI, prompt: string
       return response.text || '{}';
     } catch (err: any) {
       lastError = err;
-      const isQuota = err?.status === 'RESOURCE_EXHAUSTED' ||
-                      err?.status === 429 ||
-                      err?.message?.includes('429') ||
-                      err?.message?.includes('Quota exceeded');
-      if (isQuota) {
-        console.warn(`[Gemini] Model ${model} rate limited or quota exceeded, trying fallback model...`);
+      const isQuotaOrNotFound =
+        err?.status === 'RESOURCE_EXHAUSTED' ||
+        err?.status === 429 ||
+        err?.status === 404 ||
+        err?.status === 'NOT_FOUND' ||
+        err?.message?.includes('429') ||
+        err?.message?.includes('404') ||
+        err?.message?.includes('not found') ||
+        err?.message?.includes('Quota exceeded');
+
+      if (isQuotaOrNotFound) {
+        console.warn(`[Gemini] Model ${model} returned error (${err?.message || err?.status}), trying fallback model...`);
         continue;
       }
       throw err;

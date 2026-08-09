@@ -13,6 +13,7 @@ interface CVPreviewProps {
   onUpdatePhotoShape?: (shape: 'ronde' | 'carree' | 'arrondie' | 'hexagone' | 'arche') => void;
   onUpdatePhotoSize?: (size: number) => void;
   onSectionsReorder?: (newSections: Section[]) => void;
+  onUpdateSectionZone?: (sectionId: string, newZone: 'gauche' | 'droite' | 'principale') => void;
   interactivePreview?: boolean;
 }
 
@@ -23,6 +24,7 @@ export const CVPreview: React.FC<CVPreviewProps> = ({
   onUpdatePhotoShape,
   onUpdatePhotoSize,
   onSectionsReorder,
+  onUpdateSectionZone,
   interactivePreview = true
 }) => {
   const [isReorderActive, setIsReorderActive] = useState(false);
@@ -133,6 +135,7 @@ export const CVPreview: React.FC<CVPreviewProps> = ({
         template={template}
         isReorderActive={isReorderActive}
         onSectionsReorder={onSectionsReorder}
+        onUpdateSectionZone={onUpdateSectionZone}
         watermarkContent={renderWatermarkOverlay()}
       />
     </div>

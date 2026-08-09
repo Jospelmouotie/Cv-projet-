@@ -506,6 +506,148 @@ export const CV_TEMPLATES: CVTemplate[] = [
       skillsDisplayMode: 'badges',
       experienceDatesAlignment: 'inline'
     }
+  },
+  {
+    id: 'modele-21',
+    name: 'Modèle 21 — Thomas Durant (Contrôleur de Gestion Dense)',
+    category: 'executif',
+    description: {
+      fr: 'CV très dense 2 colonnes avec colonne latérale marine sombre, grand bandeau d\'en-tête et photo superposée à une forme circulaire.',
+      en: 'Very dense 2-column executive layout with dark navy sidebar, upper banner header, and photo overlay shape.'
+    },
+    layoutType: 'thomas-durant-dense',
+    layoutFamily: 'two-column-left',
+    supportsSecondaryAccent: true,
+    defaultAccent: '#0A2540',
+    defaultSecondaryAccent: '#003366',
+    defaultFont: 'Inter',
+    badgeText: 'Nouveau — Dense 1 Page',
+    themeConfig: {
+      primaryColor: '#0A2540',
+      secondaryColor: '#F0F4F8',
+      sidebarBackgroundColor: '#0A2540',
+      sidebarTextColor: '#FFFFFF',
+      backgroundColor: '#FFFFFF',
+      headerStyle: 'banner',
+      sectionHeaderStyle: 'underline',
+      skillsDisplayMode: 'progress',
+      photoFrameStyle: 'ronde',
+      decorativeShapes: 'circle-photo',
+      experienceDatesAlignment: 'left'
+    }
+  },
+  {
+    id: 'modele-22',
+    name: 'Modèle 22 — Aurélie Legrand (Header Diagonal & Badges)',
+    category: 'creatif',
+    description: {
+      fr: 'En-tête divisé en diagonale avec photo centrée, jauges horizontales et qualités en badges colorés.',
+      en: 'Diagonal split top header with overlaid photo, horizontal progress gauges, and multi-colored quality badges.'
+    },
+    layoutType: 'aurelie-diagonal-badges',
+    layoutFamily: 'two-column-left',
+    supportsSecondaryAccent: true,
+    defaultAccent: '#1E293B',
+    defaultSecondaryAccent: '#2563EB',
+    defaultFont: 'Montserrat',
+    badgeText: 'Nouveau Modèle 22',
+    themeConfig: {
+      primaryColor: '#1E293B',
+      secondaryColor: '#2563EB',
+      sidebarBackgroundColor: '#1E293B',
+      sidebarTextColor: '#FFFFFF',
+      backgroundColor: '#FFFFFF',
+      headerStyle: 'diagonal-split',
+      sectionHeaderStyle: 'pill',
+      skillsDisplayMode: 'badges-multicolor',
+      photoFrameStyle: 'ronde',
+      experienceDatesAlignment: 'left'
+    }
+  },
+  {
+    id: 'modele-23',
+    name: 'Modèle 23 — Aïssatou Mdalé (Photo Galet Sidebar)',
+    category: 'creatif',
+    description: {
+      fr: 'Colonne latérale douce avec grande photo galet en haut, coordonnées épurées et parcours clair.',
+      en: 'Soft beige sidebar with a large galet portrait frame at the top and clear typography.'
+    },
+    layoutType: 'aissatou-galet-sidebar',
+    layoutFamily: 'two-column-left',
+    supportsSecondaryAccent: true,
+    defaultAccent: '#381A3C',
+    defaultSecondaryAccent: '#F5EFE6',
+    defaultFont: 'Playfair Display',
+    badgeText: 'Nouveau Modèle 23',
+    themeConfig: {
+      primaryColor: '#381A3C',
+      secondaryColor: '#F5EFE6',
+      sidebarBackgroundColor: '#F5EFE6',
+      sidebarTextColor: '#1E1B18',
+      backgroundColor: '#FFFFFF',
+      headerStyle: 'sidebar-top',
+      sectionHeaderStyle: 'minimal',
+      skillsDisplayMode: 'tags',
+      photoFrameStyle: 'galet',
+      photoPosition: 'in-sidebar',
+      experienceDatesAlignment: 'inline'
+    }
+  },
+  {
+    id: 'modele-24',
+    name: 'Modèle 24 — Nicolas Dumont (Anneaux Circulaires)',
+    category: 'moderne',
+    description: {
+      fr: 'Colonne latérale sombre avec jauges en anneaux circulaires, en-tête pleine largeur et listes puces.',
+      en: 'Dark sidebar featuring circular percentage rings for skills and languages with full-width header.'
+    },
+    layoutType: 'nicolas-circular-rings',
+    layoutFamily: 'two-column-left',
+    supportsSecondaryAccent: true,
+    defaultAccent: '#06B6D4',
+    defaultSecondaryAccent: '#111827',
+    defaultFont: 'Outfit',
+    badgeText: 'Nouveau Modèle 24',
+    themeConfig: {
+      primaryColor: '#06B6D4',
+      secondaryColor: '#111827',
+      sidebarBackgroundColor: '#111827',
+      sidebarTextColor: '#FFFFFF',
+      backgroundColor: '#FFFFFF',
+      headerStyle: 'clean',
+      sectionHeaderStyle: 'left-border',
+      skillsDisplayMode: 'circular-progress',
+      photoFrameStyle: 'ronde',
+      experienceDatesAlignment: 'left'
+    }
+  },
+  {
+    id: 'modele-25',
+    name: 'Modèle 25 — Noel Taylor (Blocs Arche Empilés)',
+    category: 'creatif',
+    description: {
+      fr: 'Colonne latérale avec sections sous forme de blocs arche empilés, photo chevauchant le haut.',
+      en: 'Sidebar with stacked arch-shaped section blocks and clean main content presentation.'
+    },
+    layoutType: 'noel-arch-stacked',
+    layoutFamily: 'two-column-left',
+    supportsSecondaryAccent: true,
+    defaultAccent: '#18181B',
+    defaultSecondaryAccent: '#F4F4F5',
+    defaultFont: 'Poppins',
+    badgeText: 'Nouveau Modèle 25',
+    themeConfig: {
+      primaryColor: '#18181B',
+      secondaryColor: '#F4F4F5',
+      sidebarBackgroundColor: '#FAFAFA',
+      sidebarTextColor: '#18181B',
+      backgroundColor: '#FFFFFF',
+      headerStyle: 'arch',
+      sectionHeaderStyle: 'arch-block',
+      skillsDisplayMode: 'progress',
+      photoFrameStyle: 'ronde',
+      experienceDatesAlignment: 'left'
+    }
   }
 ];
 

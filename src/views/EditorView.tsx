@@ -148,6 +148,13 @@ export const EditorView: React.FC<EditorViewProps> = ({
     setCv(prev => ({ ...prev, sections: newSections }));
   };
 
+  const handleUpdateSectionZone = (secId: string, newZone: 'gauche' | 'droite' | 'principale') => {
+    setCv(prev => ({
+      ...prev,
+      sections: prev.sections.map(s => s.id === secId ? { ...s, colonne: newZone } : s)
+    }));
+  };
+
   const handleMoveSectionUp = (secId: string) => {
     setCv(prev => {
       const idx = prev.sections.findIndex(s => s.id === secId);
@@ -1186,6 +1193,7 @@ export const EditorView: React.FC<EditorViewProps> = ({
                 onUpdatePhotoShape={(shape) => setCv(prev => ({ ...prev, photoForme: shape }))}
                 onUpdatePhotoSize={(size) => setCv(prev => ({ ...prev, photoTaille: size }))}
                 onSectionsReorder={handleSectionsReorder}
+                onUpdateSectionZone={handleUpdateSectionZone}
                 interactivePreview={true}
               />
             </div>
@@ -1254,6 +1262,7 @@ export const EditorView: React.FC<EditorViewProps> = ({
             <CVPreview
               cv={cv}
               onSectionsReorder={handleSectionsReorder}
+              onUpdateSectionZone={handleUpdateSectionZone}
               interactivePreview={true}
             />
           </div>

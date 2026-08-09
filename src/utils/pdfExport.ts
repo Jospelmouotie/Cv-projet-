@@ -96,11 +96,11 @@ async function captureElementToCanvas(element: HTMLElement): Promise<HTMLCanvasE
       backgroundColor: '#ffffff',
       ignoreElements: (el) => el.classList.contains('print:hidden'),
       onclone: (clonedDoc, clonedEl) => {
-        // Sanitize oklch from all <style> elements in cloned document
+        // Sanitize oklch/oklab from all <style> elements in cloned document
         if (clonedDoc) {
           const styleElements = clonedDoc.querySelectorAll('style');
           styleElements.forEach((styleTag) => {
-            if (styleTag.textContent && styleTag.textContent.includes('oklch')) {
+            if (styleTag.textContent && /oklch|oklab|lab|lch|color\(/i.test(styleTag.textContent)) {
               styleTag.textContent = replaceOklchInString(styleTag.textContent);
             }
           });
@@ -112,11 +112,11 @@ async function captureElementToCanvas(element: HTMLElement): Promise<HTMLCanvasE
                 const rules = sheet.cssRules || (sheet as any).rules;
                 if (rules) {
                   Array.from(rules).forEach((rule: any) => {
-                    if (rule.style && rule.cssText && rule.cssText.includes('oklch')) {
+                    if (rule.style && rule.cssText && /oklch|oklab|lab|lch|color\(/i.test(rule.cssText)) {
                       for (let i = 0; i < rule.style.length; i++) {
                         const prop = rule.style[i];
                         const val = rule.style.getPropertyValue(prop);
-                        if (val && val.includes('oklch')) {
+                        if (val && /oklch|oklab|lab|lch|color\(/i.test(val)) {
                           rule.style.setProperty(prop, replaceOklchInString(val));
                         }
                       }
@@ -221,8 +221,8 @@ export async function exportCVToPDF(elementId: string, filename: string): Promis
     pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight, undefined, 'FAST');
     heightLeft -= pdfHeight;
 
-    // Additional pages if CV content overflows single A4 page
-    while (heightLeft > 5) {
+    // Additional pages if CV content significantly overflows single A4 page
+    while (heightLeft > 12) {
       position = heightLeft - imgHeight;
       pdf.addPage();
       pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight, undefined, 'FAST');

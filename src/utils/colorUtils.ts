@@ -40,11 +40,12 @@ export function cssColorToRgbString(cssColor: string): string {
 }
 
 /**
- * Replaces any oklch(...) occurrences within a string (e.g. style declarations, box-shadows, css rules)
+ * Replaces any modern CSS colors (oklch, oklab, lab, lch, color(...)) occurrences within a string
  */
 export function replaceOklchInString(str: string): string {
-  if (!str || typeof str !== 'string' || !str.includes('oklch')) return str;
-  return str.replace(/oklch\([^)]+\)/gi, (match) => cssColorToRgbString(match));
+  if (!str || typeof str !== 'string') return str;
+  if (!/oklch|oklab|lab|lch|color\(/i.test(str)) return str;
+  return str.replace(/(oklch|oklab|lab|lch|color)\([^)]+\)/gi, (match) => cssColorToRgbString(match));
 }
 
 /**
@@ -181,7 +182,7 @@ export function sanitizeDomColorsForCanvas(element: HTMLElement): () => void {
 
       COLOR_PROPS.forEach((prop) => {
         const val = computed[prop as any];
-        if (val && typeof val === 'string' && val.includes('oklch')) {
+        if (val && typeof val === 'string' && /oklch|oklab|lab|lch|color\(/i.test(val)) {
           if (!modified) {
             originalStyles.push({ el: node, style: node.getAttribute('style') || '' });
             modified = true;

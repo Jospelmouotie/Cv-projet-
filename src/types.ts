@@ -44,19 +44,21 @@ export interface CVTheme {
   sidebarTextColor?: string;
   headingColor?: string;
   sidebarHeadingColor?: string;
-  headerStyle?: 'banner' | 'clean' | 'card' | 'arch' | 'modern-split' | 'minimal' | 'luxury-gold' | 'ocean-wave';
-  sectionHeaderStyle?: 'underline' | 'pill' | 'banner' | 'left-border' | 'minimal' | 'boxed' | 'stars' | 'double-line';
+  headerStyle?: 'banner' | 'clean' | 'card' | 'arch' | 'modern-split' | 'minimal' | 'luxury-gold' | 'ocean-wave' | 'diagonal-split' | 'organic-arch' | 'sidebar-top';
+  sectionHeaderStyle?: 'underline' | 'pill' | 'banner' | 'left-border' | 'minimal' | 'boxed' | 'stars' | 'double-line' | 'arch-block' | 'badge-header';
   separatorStyle?: 'solid' | 'dashed' | 'dotted' | 'thick' | 'none';
-  skillsDisplayMode?: 'grid' | 'list' | 'badges' | 'progress';
+  skillsDisplayMode?: 'grid' | 'list' | 'badges' | 'progress' | 'stars' | 'tags' | 'circular-progress' | 'badges-multicolor';
   experienceDatesAlignment?: 'left' | 'top' | 'inline';
   borderRadiusVal?: number;
   borderWidthVal?: number;
   shadowVal?: 'none' | 'sm' | 'md' | 'lg';
   pageMarginVal?: number;
   columnGapVal?: number;
-  photoFrameStyle?: 'ronde' | 'carree' | 'arrondie' | 'hexagone' | 'arche';
+  photoFrameStyle?: 'ronde' | 'carree' | 'arrondie' | 'hexagone' | 'arche' | 'galet';
   photoBorderColor?: string;
   photoBorderWidth?: number;
+  decorativeShapes?: 'none' | 'circle-photo' | 'curved-sidebar-cut' | 'diagonal-split';
+  photoPosition?: 'in-header' | 'in-sidebar';
 }
 
 export interface CV {
@@ -74,9 +76,9 @@ export interface CV {
   couleurTexteSidebar?: string;
   couleurTitreSection?: string;
   couleurTitreSectionSidebar?: string;
-  styleEnTete?: 'banner' | 'clean' | 'card' | 'arch' | 'modern-split' | 'minimal' | 'luxury-gold' | 'ocean-wave';
-  styleEnTeteSection?: 'underline' | 'pill' | 'banner' | 'left-border' | 'minimal' | 'boxed' | 'stars' | 'double-line';
-  styleCompetences?: 'grid' | 'list' | 'badges' | 'progress' | 'stars' | 'tags';
+  styleEnTete?: 'banner' | 'clean' | 'card' | 'arch' | 'modern-split' | 'minimal' | 'luxury-gold' | 'ocean-wave' | 'diagonal-split' | 'organic-arch' | 'sidebar-top';
+  styleEnTeteSection?: 'underline' | 'pill' | 'banner' | 'left-border' | 'minimal' | 'boxed' | 'stars' | 'double-line' | 'arch-block' | 'badge-header';
+  styleCompetences?: 'grid' | 'list' | 'badges' | 'progress' | 'stars' | 'tags' | 'circular-progress' | 'badges-multicolor';
   stylePucesListes?: 'disc' | 'square' | 'arrow' | 'check' | 'star' | 'dash' | 'numbered' | 'none';
   alignementDatesExperience?: 'left' | 'top' | 'inline';
   nombreColonnes?: 1 | 2;
@@ -113,7 +115,7 @@ export interface CV {
   margeColonneDroite?: number; // 4px to 40px
   photoUrl?: string;
   afficherPhoto?: boolean;
-  photoForme?: 'ronde' | 'carree' | 'arrondie' | 'hexagone' | 'arche';
+  photoForme?: 'ronde' | 'carree' | 'arrondie' | 'hexagone' | 'arche' | 'galet';
   photoTaille?: number; // Size in px e.g. 60-180
   grandTitreMode?: 'nom' | 'poste';
   photoZoom?: number;
