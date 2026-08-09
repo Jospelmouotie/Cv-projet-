@@ -22,6 +22,7 @@ import { SpellCheckField } from '../components/SpellCheckField';
 import { PhotoCropper } from '../components/PhotoCropper';
 import { CVPreview } from '../components/CVPreview';
 import { CreatorStudioPanel } from '../components/CreatorStudioPanel';
+import { VisualCVEditor } from '../editor/VisualCVEditor';
 import { exportCVToPDF, exportCVToImage } from '../utils/pdfExport';
 
 import {
@@ -67,6 +68,7 @@ export const EditorView: React.FC<EditorViewProps> = ({
   const t = (key: Parameters<typeof getTranslation>[1]) => getTranslation(langue, key);
 
   const [cv, setCv] = useState<CV>(initialCV);
+  const [editorMode, setEditorMode] = useState<'visual' | 'form'>('visual');
   const [activeTab, setActiveTab] = useState<'content' | 'style' | 'preview'>('content');
   const [expandedSectionIds, setExpandedSectionIds] = useState<Record<string, boolean>>({});
   const [columnFilter, setColumnFilter] = useState<'toutes' | 'gauche' | 'droite'>('toutes');
@@ -279,6 +281,21 @@ export const EditorView: React.FC<EditorViewProps> = ({
 
   const templateObj = CV_TEMPLATES.find(t => t.id === cv.templateId) || CV_TEMPLATES[0];
 
+  if (editorMode === 'visual') {
+    return (
+      <VisualCVEditor
+        cv={cv}
+        langue={langue}
+        onSaveCV={async (updatedCV) => {
+          setCv(updatedCV);
+          await onSaveCV(updatedCV);
+        }}
+        onToggleViewMode={(mode) => setEditorMode(mode)}
+        viewMode={editorMode}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-slate-100 dark:bg-slate-950 pb-28 md:pb-12 text-slate-800 dark:text-slate-100 font-sans">
       
@@ -322,6 +339,14 @@ export const EditorView: React.FC<EditorViewProps> = ({
             <div className="hidden sm:flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700">
               <button
                 type="button"
+                onClick={() => setEditorMode('visual')}
+                className="px-3 py-1.5 rounded-lg text-xs font-extrabold flex items-center gap-1.5 transition-all cursor-pointer bg-blue-600 text-white shadow-xs"
+              >
+                <Palette className="w-3.5 h-3.5" />
+                <span>Éditeur Visuel (Canva)</span>
+              </button>
+              <button
+                type="button"
                 onClick={() => setActiveTab('content')}
                 className={`px-3 py-1.5 rounded-lg text-xs font-extrabold flex items-center gap-1.5 transition-all cursor-pointer ${
                   activeTab === 'content'
@@ -330,7 +355,7 @@ export const EditorView: React.FC<EditorViewProps> = ({
                 }`}
               >
                 <FileText className="w-3.5 h-3.5" />
-                <span>Contenu</span>
+                <span>Formulaire</span>
               </button>
               <button
                 type="button"
@@ -342,7 +367,7 @@ export const EditorView: React.FC<EditorViewProps> = ({
                 }`}
               >
                 <Sliders className="w-3.5 h-3.5" />
-                <span>Créateur Libre 🎨</span>
+                <span>Thème 🎨</span>
               </button>
             </div>
 

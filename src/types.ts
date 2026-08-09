@@ -152,6 +152,8 @@ export interface Payment {
   cvTitle?: string;
 }
 
+export * from './types/document';
+
 export type TemplateCategory = 'moderne' | 'classique' | 'creatif' | 'minimaliste' | 'executif';
 
 export interface CVTemplate {
