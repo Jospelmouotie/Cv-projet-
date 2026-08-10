@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { CV, Language } from '../types';
-import { CVDocument, CVElement, ElementType } from '../types/document';
+import { CVDocument, CVElement, ElementType, ShapeType, ListType } from '../types/document';
 import { convertLegacyCVToDocument, convertDocumentToLegacyCV } from '../utils/documentConverter';
 import { useHistory } from './useHistory';
-import { Toolbar } from './Toolbar';
+import { WordRibbonToolbar } from './WordRibbonToolbar';
 import { ElementsSidebar } from './ElementsSidebar';
 import { Canvas } from './Canvas';
 import { PropertiesPanel } from './PropertiesPanel';
@@ -85,8 +85,21 @@ export const VisualCVEditor: React.FC<VisualCVEditorProps> = ({
     });
   };
 
+  // Handle updating style of selected element
+  const handleUpdateStyle = (stylePatch: Partial<any>) => {
+    if (!selectedElement) return;
+    const updated: CVElement = {
+      ...selectedElement,
+      style: {
+        ...(selectedElement.style || {}),
+        ...stylePatch
+      }
+    };
+    handleUpdateElement(updated);
+  };
+
   // Handle adding new element to active page
-  const handleAddElement = (type: ElementType, presetContent?: any) => {
+  const handleAddElement = (type: ElementType, presetContent?: any, extraStyle?: any) => {
     const newId = `elem-${type}-${Date.now()}`;
     const targetPageIdx = document.pages.findIndex((p) => p.id === activePageId);
     const validIdx = targetPageIdx >= 0 ? targetPageIdx : 0;
@@ -97,8 +110,8 @@ export const VisualCVEditor: React.FC<VisualCVEditorProps> = ({
       type,
       x: 50,
       y: 100 + (targetPage?.elements.length || 0) * 35,
-      width: type === 'line' ? 680 : type === 'text' ? 400 : 250,
-      height: type === 'shape' ? 80 : 40,
+      width: type === 'line' ? 680 : type === 'text' ? 400 : 280,
+      height: type === 'shape' ? 80 : type === 'two-column' ? 160 : 60,
       zIndex: 30,
       locked: false,
       visible: true,
@@ -107,7 +120,8 @@ export const VisualCVEditor: React.FC<VisualCVEditorProps> = ({
         backgroundColor: type === 'shape' ? '#E2E8F0' : 'transparent',
         fontSize: type === 'text' ? 14 : 10,
         fontFamily: 'Inter',
-        padding: type === 'contact' ? 8 : 4
+        padding: 6,
+        ...extraStyle
       },
       content: presetContent || { text: 'Nouveau contenu' }
     };
@@ -123,12 +137,55 @@ export const VisualCVEditor: React.FC<VisualCVEditorProps> = ({
     });
 
     setSelectedElementId(newId);
-    setMobileDrawer(null); // Close mobile drawer after adding
+    setMobileDrawer(null);
+  };
+
+  // Add rich shapes
+  const handleAddShape = (shapeType: ShapeType) => {
+    handleAddElement(
+      'shape',
+      { shapeType, label: shapeType === 'badge' ? 'Compétence Clé' : '' },
+      {
+        backgroundColor: shapeType === 'badge' ? '#DBEAFE' : shapeType === 'pillar' ? '#1E293B' : '#E2E8F0',
+        borderRadius: shapeType === 'badge' || shapeType === 'circle' ? 9999 : 8
+      }
+    );
+  };
+
+  // Add rich lists
+  const handleAddList = (listType: ListType) => {
+    handleAddElement('list', {
+      type: listType,
+      title: listType === 'bullet' ? 'Liste à Puces' : listType === 'numbered' ? 'Étapes Pro' : 'Compétences Techniques',
+      items: [
+        { id: '1', text: 'Premier point d\'expertise', value: 90 },
+        { id: '2', text: 'Deuxième point fort', value: 85 },
+        { id: '3', text: 'Troisième accomplissement', value: 75 }
+      ]
+    });
+  };
+
+  // Add 2-column section layout
+  const handleAddTwoColumnSection = (leftPercent: number, rightPercent: number) => {
+    handleAddElement(
+      'two-column',
+      {
+        leftWidthPercent: leftPercent,
+        rightWidthPercent: rightPercent,
+        gap: 20,
+        leftTitle: 'Sidebar (Contact, Skills)',
+        rightTitle: 'Contenu Principal (Expériences)'
+      },
+      {
+        padding: 8
+      }
+    );
   };
 
   // Handle duplicating element
-  const handleDuplicateElement = (elementId: string) => {
-    if (!selectedElement) return;
+  const handleDuplicateElement = (elementId?: string) => {
+    const targetId = elementId || selectedElementId;
+    if (!targetId || !selectedElement) return;
 
     const copyId = `elem-${selectedElement.type}-copy-${Date.now()}`;
     const copyElem: CVElement = {
@@ -141,7 +198,7 @@ export const VisualCVEditor: React.FC<VisualCVEditorProps> = ({
 
     updateDocument((prevDoc) => {
       const updatedPages = prevDoc.pages.map((p) => {
-        if (p.elements.some((el) => el.id === elementId)) {
+        if (p.elements.some((el) => el.id === targetId)) {
           return { ...p, elements: [...p.elements, copyElem] };
         }
         return p;
@@ -153,15 +210,76 @@ export const VisualCVEditor: React.FC<VisualCVEditorProps> = ({
   };
 
   // Handle deleting element
-  const handleDeleteElement = (elementId: string) => {
+  const handleDeleteElement = (elementId?: string) => {
+    const targetId = elementId || selectedElementId;
+    if (!targetId) return;
+
     updateDocument((prevDoc) => {
       const updatedPages = prevDoc.pages.map((p) => ({
         ...p,
-        elements: p.elements.filter((el) => el.id !== elementId)
+        elements: p.elements.filter((el) => el.id !== targetId)
       }));
       return { ...prevDoc, pages: updatedPages };
     });
     setSelectedElementId(null);
+  };
+
+  // Toggle Lock Selected
+  const handleToggleLockSelected = () => {
+    if (!selectedElement) return;
+    handleUpdateElement({
+      ...selectedElement,
+      locked: !selectedElement.locked
+    });
+  };
+
+  // Layer order: Bring to Front / Send to Back
+  const handleBringToFront = () => {
+    if (!selectedElement) return;
+    const maxZ = Math.max(...(document.pages[0]?.elements.map((e) => e.zIndex) || [10]), 10);
+    handleUpdateElement({
+      ...selectedElement,
+      zIndex: maxZ + 5
+    });
+  };
+
+  const handleSendToBack = () => {
+    if (!selectedElement) return;
+    const minZ = Math.min(...(document.pages[0]?.elements.map((e) => e.zIndex) || [10]), 10);
+    handleUpdateElement({
+      ...selectedElement,
+      zIndex: Math.max(1, minZ - 1)
+    });
+  };
+
+  // Apply Theme Color to main theme or selected element
+  const handleApplyThemeColor = (colorHex: string) => {
+    if (selectedElement) {
+      handleUpdateStyle({ color: colorHex, borderColor: colorHex });
+    } else {
+      updateDocument((prevDoc) => ({
+        ...prevDoc,
+        theme: {
+          ...prevDoc.theme,
+          couleurAccent: colorHex
+        }
+      }));
+    }
+  };
+
+  // Apply Font Family
+  const handleApplyFontFamily = (fontName: string) => {
+    if (selectedElement) {
+      handleUpdateStyle({ fontFamily: fontName });
+    } else {
+      updateDocument((prevDoc) => ({
+        ...prevDoc,
+        theme: {
+          ...prevDoc.theme,
+          police: fontName
+        }
+      }));
+    }
   };
 
   // Handle quick alignment
@@ -232,10 +350,10 @@ export const VisualCVEditor: React.FC<VisualCVEditorProps> = ({
   return (
     <div className="flex flex-col h-screen w-full bg-slate-100 dark:bg-slate-950 overflow-hidden relative">
       
-      {/* Top Toolbar */}
-      <Toolbar
-        viewMode={viewMode}
-        onToggleViewMode={onToggleViewMode}
+      {/* Top Word Ribbon Toolbar */}
+      <WordRibbonToolbar
+        selectedElements={selectedElement ? [selectedElement] : []}
+        activePageId={activePageId}
         canUndo={canUndo}
         canRedo={canRedo}
         onUndo={undo}
@@ -244,10 +362,25 @@ export const VisualCVEditor: React.FC<VisualCVEditorProps> = ({
         onZoomChange={setZoomLevel}
         gridSnap={gridSnap}
         onToggleGridSnap={() => setGridSnap(!gridSnap)}
+        onAddElement={handleAddElement}
+        onAddShape={handleAddShape}
+        onAddList={handleAddList}
+        onAddTwoColumnSection={handleAddTwoColumnSection}
+        onUpdateStyle={handleUpdateStyle}
+        onDeleteSelected={() => handleDeleteElement()}
+        onDuplicateSelected={() => handleDuplicateElement()}
+        onToggleLockSelected={handleToggleLockSelected}
+        onBringToFront={handleBringToFront}
+        onSendToBack={handleSendToBack}
+        onAlignSelected={handleAlignElement}
         onOpenAIAssistant={() => setShowAIModal(true)}
         onOpenATSAnalyzer={() => setShowATSModal(true)}
         onSaveCV={() => onSaveCV(convertDocumentToLegacyCV(document))}
         onExportPDF={() => exportCVToPDF('cv-preview-container', `${cv.titreCV || cv.titre || 'CV'}.pdf`)}
+        onToggleViewMode={onToggleViewMode}
+        viewMode={viewMode}
+        onApplyThemeColor={handleApplyThemeColor}
+        onApplyFontFamily={handleApplyFontFamily}
       />
 
       {/* Main Workspace Body */}

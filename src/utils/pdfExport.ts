@@ -30,7 +30,7 @@ async function captureElementToCanvas(element: HTMLElement): Promise<HTMLCanvasE
   // Sanitize any modern oklch CSS colors in DOM before rendering
   const restoreColors = sanitizeDomColorsForCanvas(element);
 
-  // Attempt 1: html-to-image with skipFonts: true
+  // Attempt 1: html-to-image with skipFonts: true and style override
   try {
     const dataUrl = await toPng(element, {
       quality: 0.98,
@@ -38,6 +38,10 @@ async function captureElementToCanvas(element: HTMLElement): Promise<HTMLCanvasE
       cacheBust: true,
       skipFonts: true,
       backgroundColor: '#ffffff',
+      style: {
+        transform: 'none',
+        transformOrigin: 'top left'
+      },
       filter: (node) => {
         if (node instanceof HTMLElement && node.classList.contains('print:hidden')) {
           return false;
@@ -134,6 +138,7 @@ async function captureElementToCanvas(element: HTMLElement): Promise<HTMLCanvasE
 
         if (clonedEl instanceof HTMLElement) {
           clonedEl.style.transform = 'none';
+          clonedEl.style.transformOrigin = 'top left';
           clonedEl.style.margin = '0';
           clonedEl.style.position = 'relative';
           clonedEl.style.opacity = '1';
@@ -165,6 +170,10 @@ export async function exportCVToImage(
 
   try {
     const canvas = await captureElementToCanvas(element);
+    if (!canvas || !canvas.width || !canvas.height || canvas.width <= 0 || canvas.height <= 0 || isNaN(canvas.width) || isNaN(canvas.height)) {
+      return { success: false, message: "Impossible de capturer les dimensions du CV pour l'image." };
+    }
+
     const mimeType = format === 'jpeg' ? 'image/jpeg' : 'image/png';
     const extension = format === 'jpeg' ? 'jpg' : 'png';
     const imgData = canvas.toDataURL(mimeType, format === 'jpeg' ? 0.95 : 1.0);
@@ -199,6 +208,11 @@ export async function exportCVToPDF(elementId: string, filename: string): Promis
 
   try {
     const canvas = await captureElementToCanvas(element);
+
+    if (!canvas || !canvas.width || !canvas.height || canvas.width <= 0 || canvas.height <= 0 || isNaN(canvas.width) || isNaN(canvas.height)) {
+      return { success: false, message: "Impossible de mesurer les dimensions du CV pour l'exportation PDF." };
+    }
+
     const imgData = canvas.toDataURL('image/jpeg', 0.98);
 
     // Standard A4 portrait dimensions in mm (210 x 297)
@@ -208,25 +222,40 @@ export async function exportCVToPDF(elementId: string, filename: string): Promis
       format: 'a4'
     });
 
-    const pdfWidth = pdf.internal.pageSize.getWidth(); // 210mm
-    const pdfHeight = pdf.internal.pageSize.getHeight(); // 297mm
+    const pdfWidth = pdf.internal.pageSize.getWidth() || 210; // 210mm
+    const pdfHeight = pdf.internal.pageSize.getHeight() || 297; // 297mm
 
-    const imgWidth = pdfWidth;
-    const imgHeight = (canvas.height * pdfWidth) / canvas.width;
+    const safePdfWidth = (typeof pdfWidth === 'number' && isFinite(pdfWidth) && pdfWidth > 0) ? pdfWidth : 210;
+    const safePdfHeight = (typeof pdfHeight === 'number' && isFinite(pdfHeight) && pdfHeight > 0) ? pdfHeight : 297;
+
+    const imgWidth = safePdfWidth;
+    let rawImgHeight = (canvas.height * safePdfWidth) / canvas.width;
+
+    if (!rawImgHeight || isNaN(rawImgHeight) || !isFinite(rawImgHeight) || rawImgHeight <= 0) {
+      rawImgHeight = safePdfHeight;
+    }
+    const imgHeight = rawImgHeight;
 
     let heightLeft = imgHeight;
     let position = 0;
 
+    const safePos = (typeof position === 'number' && isFinite(position)) ? position : 0;
+    const safeW = (typeof imgWidth === 'number' && isFinite(imgWidth) && imgWidth > 0) ? imgWidth : 210;
+    const safeH = (typeof imgHeight === 'number' && isFinite(imgHeight) && imgHeight > 0) ? imgHeight : 297;
+
     // Draw primary visual canvas page
-    pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight, undefined, 'FAST');
-    heightLeft -= pdfHeight;
+    pdf.addImage(imgData, 'JPEG', 0, safePos, safeW, safeH, undefined, 'FAST');
+    heightLeft -= safePdfHeight;
 
     // Additional pages if CV content significantly overflows single A4 page
-    while (heightLeft > 12) {
+    let maxPages = 8;
+    while (heightLeft > 12 && maxPages > 0) {
+      maxPages--;
       position = heightLeft - imgHeight;
+      const currentPos = (typeof position === 'number' && isFinite(position)) ? position : 0;
       pdf.addPage();
-      pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight, undefined, 'FAST');
-      heightLeft -= pdfHeight;
+      pdf.addImage(imgData, 'JPEG', 0, currentPos, safeW, safeH, undefined, 'FAST');
+      heightLeft -= safePdfHeight;
     }
 
     // Extract text nodes from DOM to add a invisible/transparent selectable text layer for ATS engines
@@ -236,7 +265,7 @@ export async function exportCVToPDF(elementId: string, filename: string): Promis
         acceptNode: (node) => {
           if (!node.textContent || node.textContent.trim().length === 0) return NodeFilter.FILTER_REJECT;
           const parent = node.parentElement;
-          if (parent && parent.classList.contains('print:hidden')) return NodeFilter.FILTER_REJECT;
+          if (parent && parent.classList?.contains('print:hidden')) return NodeFilter.FILTER_REJECT;
           return NodeFilter.FILTER_ACCEPT;
         }
       });
@@ -251,7 +280,7 @@ export async function exportCVToPDF(elementId: string, filename: string): Promis
         pdf.setTextColor(255, 255, 255); // White or hidden
         pdf.setFontSize(1); // Micro size text overlay for ATS indexers
         const fullText = textNodes.join(' ');
-        pdf.text(fullText.slice(0, 4000), 10, pdfHeight - 2, { maxWidth: pdfWidth - 20 });
+        pdf.text(fullText.slice(0, 4000), 10, safePdfHeight - 2, { maxWidth: safePdfWidth - 20 });
       }
     } catch {
       // Non-critical text overlay failure fallback

@@ -1,7 +1,20 @@
 import React from 'react';
 import { CVElement } from '../types/document';
 import { SectionSlot } from '../components/SectionSlot';
-import { Mail, Phone, MapPin, Globe, Linkedin, Github, Award, CheckCircle, Star } from 'lucide-react';
+import {
+  Mail,
+  Phone,
+  MapPin,
+  Globe,
+  Linkedin,
+  Github,
+  Award,
+  CheckCircle,
+  Star,
+  Check,
+  Briefcase,
+  GraduationCap
+} from 'lucide-react';
 
 interface ElementRendererProps {
   element: CVElement;
@@ -23,7 +36,7 @@ export const ElementRenderer: React.FC<ElementRendererProps> = ({
     backgroundColor: style?.backgroundColor || 'transparent',
     borderColor: style?.borderColor || 'transparent',
     borderWidth: style?.borderWidth ? `${style.borderWidth}px` : undefined,
-    borderStyle: style?.borderWidth ? 'solid' : undefined,
+    borderStyle: style?.borderStyle || (style?.borderWidth ? 'solid' : undefined),
     borderRadius: style?.borderRadius ? `${style.borderRadius}px` : undefined,
     fontSize: style?.fontSize ? `${style.fontSize}pt` : undefined,
     fontFamily: style?.fontFamily || 'inherit',
@@ -54,6 +67,177 @@ export const ElementRenderer: React.FC<ElementRendererProps> = ({
             {typeof content === 'string' ? content : content?.text || 'Texte personnalisable'}
           </div>
         );
+
+      case 'shape': {
+        const shapeType = content?.shapeType || 'rectangle';
+        const label = content?.label || '';
+
+        if (shapeType === 'circle') {
+          return (
+            <div
+              className="w-full h-full rounded-full flex items-center justify-center font-bold text-center text-xs p-1"
+              style={{
+                backgroundColor: style?.backgroundColor || '#2563EB',
+                color: style?.color || '#FFFFFF',
+                border: style?.borderWidth ? `${style.borderWidth}px solid ${style?.borderColor || '#1D4ED8'}` : undefined
+              }}
+            >
+              {label}
+            </div>
+          );
+        }
+
+        if (shapeType === 'badge') {
+          return (
+            <div
+              className="w-full h-full rounded-full px-3 py-1 flex items-center justify-center font-bold text-xs shadow-xs"
+              style={{
+                backgroundColor: style?.backgroundColor || '#DBEAFE',
+                color: style?.color || '#1E40AF',
+                border: style?.borderWidth ? `${style.borderWidth}px solid ${style?.borderColor || '#93C5FD'}` : undefined
+              }}
+            >
+              {label || 'Badge Pilule'}
+            </div>
+          );
+        }
+
+        if (shapeType === 'pillar') {
+          return (
+            <div
+              className="w-full h-full rounded-md shadow-2xs"
+              style={{
+                backgroundColor: style?.backgroundColor || '#1E293B'
+              }}
+            />
+          );
+        }
+
+        return (
+          <div
+            className="w-full h-full flex items-center justify-center p-2 text-xs font-semibold"
+            style={{
+              backgroundColor: style?.backgroundColor || '#E2E8F0',
+              color: style?.color || '#0F172A',
+              borderRadius: style?.borderRadius ? `${style.borderRadius}px` : '6px',
+              border: style?.borderWidth ? `${style.borderWidth}px solid ${style?.borderColor || '#CBD5E1'}` : undefined
+            }}
+          >
+            {label}
+          </div>
+        );
+      }
+
+      case 'list': {
+        const listType = content?.type || 'bullet';
+        const items = content?.items || [
+          { id: '1', text: 'Premier point clé' },
+          { id: '2', text: 'Deuxième point fort' },
+          { id: '3', text: 'Troisième compétence' }
+        ];
+
+        return (
+          <div className="w-full space-y-1.5" style={styleObj}>
+            {content?.title && (
+              <h4 className="font-bold text-sm text-slate-900 dark:text-slate-100 mb-1">
+                {content.title}
+              </h4>
+            )}
+
+            {listType === 'bullet' && (
+              <ul className="list-disc list-inside space-y-1">
+                {items.map((item: any) => (
+                  <li key={item.id} className="text-xs">
+                    {item.text}
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            {listType === 'numbered' && (
+              <ol className="list-decimal list-inside space-y-1">
+                {items.map((item: any) => (
+                  <li key={item.id} className="text-xs">
+                    {item.text}
+                  </li>
+                ))}
+              </ol>
+            )}
+
+            {listType === 'checklist' && (
+              <div className="space-y-1">
+                {items.map((item: any) => (
+                  <div key={item.id} className="flex items-center space-x-2 text-xs">
+                    <CheckCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                    <span>{item.text}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {listType === 'skill-progress' && (
+              <div className="space-y-2">
+                {items.map((item: any) => (
+                  <div key={item.id} className="space-y-0.5">
+                    <div className="flex justify-between text-xs font-semibold">
+                      <span>{item.text}</span>
+                      <span className="opacity-75">{item.value || 80}%</span>
+                    </div>
+                    <div className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-blue-600 rounded-full transition-all"
+                        style={{ width: `${item.value || 80}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      }
+
+      case 'two-column': {
+        const leftPercent = content?.leftWidthPercent || 30;
+        const rightPercent = content?.rightWidthPercent || 70;
+        const gap = content?.gap || 16;
+
+        return (
+          <div className="w-full h-full flex rounded-xl border border-dashed border-blue-300 dark:border-blue-800 p-2 overflow-hidden bg-slate-50/50 dark:bg-slate-900/50">
+            <div
+              className="p-3 rounded-lg flex flex-col space-y-2 border border-slate-200 dark:border-slate-800"
+              style={{
+                width: `${leftPercent}%`,
+                marginRight: `${gap / 2}px`,
+                backgroundColor: content?.leftColumnBackground || '#F8FAFC'
+              }}
+            >
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                Colonne Gauche ({leftPercent}%)
+              </span>
+              <div className="text-xs text-slate-600 dark:text-slate-300">
+                {content?.leftTitle || 'Photo, Contact, Compétences'}
+              </div>
+            </div>
+
+            <div
+              className="p-3 rounded-lg flex flex-col space-y-2 border border-slate-200 dark:border-slate-800"
+              style={{
+                width: `${rightPercent}%`,
+                marginLeft: `${gap / 2}px`,
+                backgroundColor: content?.rightColumnBackground || '#FFFFFF'
+              }}
+            >
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                Colonne Droite ({rightPercent}%)
+              </span>
+              <div className="text-xs text-slate-600 dark:text-slate-300">
+                {content?.rightTitle || 'Profil, Expériences, Formation'}
+              </div>
+            </div>
+          </div>
+        );
+      }
 
       case 'section':
         if (content?.section) {
@@ -113,23 +297,11 @@ export const ElementRenderer: React.FC<ElementRendererProps> = ({
                 style={{ borderRadius: style?.borderRadius ? `${style.borderRadius}px` : undefined }}
               />
             ) : (
-              <div className="w-full h-32 bg-slate-100 dark:bg-slate-800 border-2 border-dashed border-slate-300 dark:border-slate-700 flex flex-col items-center justify-center text-slate-400 text-xs rounded-xl">
-                <span>Cliquez pour ajouter une image</span>
+              <div className="w-full h-32 bg-slate-100 dark:bg-slate-800 border-2 border-dashed border-slate-300 dark:border-slate-700 flex flex-col items-center justify-center text-slate-400 text-xs rounded-xl p-2 text-center">
+                <span>Glisser/Déposer une image</span>
               </div>
             )}
           </div>
-        );
-
-      case 'shape':
-        return (
-          <div
-            className="w-full h-full"
-            style={{
-              backgroundColor: style?.backgroundColor || '#3B82F6',
-              borderRadius: style?.borderRadius ? `${style.borderRadius}px` : '4px',
-              border: style?.borderWidth ? `${style.borderWidth}px solid ${style?.borderColor || '#1D4ED8'}` : undefined
-            }}
-          />
         );
 
       case 'line':
@@ -154,6 +326,70 @@ export const ElementRenderer: React.FC<ElementRendererProps> = ({
             <span>{typeof content === 'string' ? content : content?.value || 'contact@email.com'}</span>
           </div>
         );
+
+      case 'experience': {
+        const title = content?.title || 'Expérience Professionnelle';
+        const items = content?.items || [
+          {
+            poste: 'Développeur Fullstack',
+            entreprise: 'Tech Corp',
+            date: '2022 - Présent',
+            description: 'Conception et réalisation d\'applications modernes.'
+          }
+        ];
+
+        return (
+          <div className="w-full space-y-2 p-1" style={styleObj}>
+            <h3 className="font-bold text-sm text-blue-600 border-b border-blue-200 pb-1 flex items-center space-x-1.5">
+              <Briefcase className="w-4 h-4" />
+              <span>{title}</span>
+            </h3>
+            <div className="space-y-2">
+              {items.map((it: any, idx: number) => (
+                <div key={idx} className="space-y-0.5 text-xs">
+                  <div className="flex justify-between font-bold text-slate-800 dark:text-slate-100">
+                    <span>{it.poste}</span>
+                    <span className="text-slate-500 font-normal">{it.date}</span>
+                  </div>
+                  <div className="text-slate-600 dark:text-slate-400 font-semibold">{it.entreprise}</div>
+                  <p className="text-slate-600 dark:text-slate-300 leading-relaxed">{it.description}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      }
+
+      case 'education': {
+        const title = content?.title || 'Formation';
+        const items = content?.items || [
+          {
+            diplome: 'Master en Informatique',
+            ecole: 'Université de Paris',
+            date: '2019 - 2021'
+          }
+        ];
+
+        return (
+          <div className="w-full space-y-2 p-1" style={styleObj}>
+            <h3 className="font-bold text-sm text-purple-600 border-b border-purple-200 pb-1 flex items-center space-x-1.5">
+              <GraduationCap className="w-4 h-4" />
+              <span>{title}</span>
+            </h3>
+            <div className="space-y-2">
+              {items.map((it: any, idx: number) => (
+                <div key={idx} className="space-y-0.5 text-xs">
+                  <div className="flex justify-between font-bold text-slate-800 dark:text-slate-100">
+                    <span>{it.diplome}</span>
+                    <span className="text-slate-500 font-normal">{it.date}</span>
+                  </div>
+                  <div className="text-slate-600 dark:text-slate-400 font-semibold">{it.ecole}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      }
 
       case 'icon':
         return (

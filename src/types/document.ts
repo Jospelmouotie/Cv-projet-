@@ -8,6 +8,8 @@ export type ElementType =
   | 'line'
   | 'icon'
   | 'group'
+  | 'list'
+  | 'two-column'
   | 'skill'
   | 'contact'
   | 'experience'
@@ -15,6 +17,9 @@ export type ElementType =
   | 'language'
   | 'project'
   | 'custom';
+
+export type ShapeType = 'rectangle' | 'circle' | 'line' | 'divider' | 'badge' | 'callout' | 'pillar';
+export type ListType = 'bullet' | 'numbered' | 'checklist' | 'skill-progress';
 
 export interface ElementStyle {
   color?: string;
@@ -35,6 +40,37 @@ export interface ElementStyle {
   shadow?: 'none' | 'sm' | 'md' | 'lg' | string;
   padding?: number;
   margin?: number;
+  borderStyle?: 'solid' | 'dashed' | 'dotted' | 'none';
+  bulletColor?: string;
+}
+
+export interface ListContent {
+  type: ListType;
+  title?: string;
+  items: Array<{
+    id: string;
+    text: string;
+    subtitle?: string;
+    checked?: boolean;
+    level?: number;
+    value?: number; // for skill progress (0-100)
+  }>;
+}
+
+export interface ShapeContent {
+  shapeType: ShapeType;
+  label?: string;
+  iconName?: string;
+}
+
+export interface TwoColumnContent {
+  leftWidthPercent: number; // e.g. 30 for 30%
+  rightWidthPercent: number; // e.g. 70 for 70%
+  gap: number; // in px
+  leftColumnBackground?: string;
+  rightColumnBackground?: string;
+  leftElements?: CVElement[];
+  rightElements?: CVElement[];
 }
 
 export interface CVElement {
@@ -50,11 +86,12 @@ export interface CVElement {
   visible?: boolean;
   opacity?: number;
   style?: ElementStyle;
-  content: any; // dynamic content based on element type
+  content: any; // dynamic content based on element type (Text, ListContent, ShapeContent, TwoColumnContent, etc.)
   metadata?: {
     sectionId?: string;
     sectionType?: string;
     column?: 'gauche' | 'droite' | 'principale';
+    groupId?: string;
     [key: string]: any;
   };
 }
@@ -96,3 +133,4 @@ export interface CVDocument {
   pages: CVPage[];
   legacyData?: CV;
 }
+

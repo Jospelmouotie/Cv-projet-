@@ -3,7 +3,42 @@ import path from 'path';
 import fs from 'fs';
 import multer from 'multer';
 import * as pdfParseModule from 'pdf-parse';
-const pdfParse = (pdfParseModule as any).default || pdfParseModule;
+
+async function extractTextFromPDF(buffer: Buffer): Promise<string> {
+  // Try v1 / function export
+  const fn = typeof pdfParseModule === 'function'
+    ? pdfParseModule
+    : ((pdfParseModule as any)?.default);
+
+  if (typeof fn === 'function') {
+    try {
+      const res = await fn(buffer);
+      if (res && typeof res.text === 'string') {
+        return res.text;
+      }
+    } catch (e) {
+      console.warn('pdf-parse function export failed, attempting PDFParse class:', e);
+    }
+  }
+
+  // Try v2 PDFParse class export
+  const PDFParseClass = (pdfParseModule as any)?.PDFParse || (pdfParseModule as any)?.default?.PDFParse;
+  if (PDFParseClass) {
+    const parser = new PDFParseClass({ data: buffer });
+    try {
+      const result = await parser.getText();
+      if (result && typeof result.text === 'string') {
+        return result.text;
+      }
+    } finally {
+      if (typeof parser.destroy === 'function') {
+        try { await parser.destroy(); } catch {}
+      }
+    }
+  }
+
+  throw new Error('Impossible d\'initialiser le moteur de lecture PDF.');
+}
 import mammoth from 'mammoth';
 import { createServer as createViteServer } from 'vite';
 import { TEMPLATE_PRESETS, getPresetForTemplate } from './src/data/templatePresets';
@@ -250,8 +285,7 @@ app.post('/api/import/parse', upload.single('file'), async (req, res) => {
     let extractedText = '';
 
     if (ext === '.pdf' || file.mimetype === 'application/pdf') {
-      const pdfData = await pdfParse(file.buffer);
-      extractedText = pdfData.text || '';
+      extractedText = await extractTextFromPDF(file.buffer);
     } else if (ext === '.docx' || file.mimetype.includes('wordprocessingml') || file.mimetype.includes('msword')) {
       const result = await mammoth.extractRawText({ buffer: file.buffer });
       extractedText = result.value || '';
@@ -570,7 +604,14 @@ function getGemini(): GoogleGenAI | null {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) return null;
   if (!geminiAi) {
-    geminiAi = new GoogleGenAI({ apiKey });
+    geminiAi = new GoogleGenAI({
+      apiKey,
+      httpOptions: {
+        headers: {
+          'User-Agent': 'aistudio-build'
+        }
+      }
+    });
   }
   return geminiAi;
 }
@@ -591,8 +632,8 @@ function setCachedCorrection(key: string, val: any) {
   spellcheckCache.set(key, val);
 }
 
-async function generateGeminiContentWithFallback(ai: GoogleGenAI, prompt: string) {
-  const modelsToTry = ['gemini-2.5-flash', 'gemini-2.0-flash'];
+async function generateGeminiContentWithFallback(ai: GoogleGenAI, prompt: string): Promise<string | null> {
+  const modelsToTry = ['gemini-3.6-flash', 'gemini-flash-latest', 'gemini-3.1-flash-lite'];
   let lastError: any = null;
 
   for (const model of modelsToTry) {
@@ -618,15 +659,70 @@ async function generateGeminiContentWithFallback(ai: GoogleGenAI, prompt: string
         err?.message?.includes('Quota exceeded');
 
       if (isQuotaOrNotFound) {
-        console.warn(`[Gemini] Model ${model} returned error (${err?.message || err?.status}), trying fallback model...`);
+        console.warn(`[Gemini] Model ${model} returned rate limit or notice (${err?.message || err?.status}), attempting fallback model...`);
         continue;
       }
       throw err;
     }
   }
 
-  throw lastError;
+  console.warn('[Gemini] All models reached quota limit or failed. Returning fallback response.', lastError?.message || lastError);
+  return null;
 }
+
+app.post('/api/ai/reformuler-experience', async (req, res) => {
+  const { texteOriginal, langue = 'fr', action = 'ameliorer' } = req.body;
+
+  if (!texteOriginal || typeof texteOriginal !== 'string' || texteOriginal.trim().length === 0) {
+    return res.status(400).json({ error: 'Texte original requis' });
+  }
+
+  const ai = getGemini();
+  if (!ai) {
+    let fallback = texteOriginal;
+    if (action === 'professionnel') {
+      fallback = `Gestion et optimisation de : ${texteOriginal.replace(/J'ai fait|Je me suis occupé de/gi, 'Supervision et déploiement de')}`;
+    } else {
+      fallback = `Mise en œuvre et optimisation : ${texteOriginal}`;
+    }
+    return res.json({ texteReformule: fallback });
+  }
+
+  try {
+    const prompt = `Tu es un consultant expert en recrutement et révision de CV en langue ${langue === 'en' ? 'Anglaise' : 'Française'}.
+Améliore et réécris le texte suivant de manière très professionnelle, dynamique et adaptée aux normes des recruteurs:
+"${texteOriginal.replace(/"/g, '\\"')}"
+
+Retourne EXCLUSIVEMENT un objet JSON valide au format:
+{
+  "texteReformule": "texte optimisé"
+}`;
+
+    const responseText = await generateGeminiContentWithFallback(ai, prompt);
+    if (!responseText) {
+      let fallback = texteOriginal;
+      if (action === 'professionnel') {
+        fallback = `Pilotage et déploiement stratégique : ${texteOriginal.replace(/J'ai fait|Je me suis occupé de/gi, 'Supervision intégrale de')}`;
+      } else {
+        fallback = `Optimisation de l'impact opérationnel : ${texteOriginal}`;
+      }
+      return res.json({ texteReformule: fallback });
+    }
+
+    try {
+      const parsed = JSON.parse(responseText);
+      const texteReformule = parsed.texteReformule || responseText;
+      return res.json({ texteReformule });
+    } catch {
+      return res.json({ texteReformule: responseText });
+    }
+  } catch (err: any) {
+    console.warn('Gemini AI reformulate route error:', err?.message || err);
+    return res.json({
+      texteReformule: `Optimisation de la performance : ${texteOriginal}`
+    });
+  }
+});
 
 app.post('/api/correction', async (req, res) => {
   const { texte, langue = 'fr' } = req.body;
@@ -672,6 +768,10 @@ Texte à analyser:
 "${texte.replace(/"/g, '\\"')}"`;
 
     const responseText = await generateGeminiContentWithFallback(ai, prompt);
+    if (!responseText) {
+      return res.json({ erreurs: [] });
+    }
+
     const parsed = JSON.parse(responseText || '{}');
     const erreurs = Array.isArray(parsed.erreurs) ? parsed.erreurs : [];
 
@@ -734,6 +834,10 @@ Retourne un JSON avec cette structure:
 CV: ${JSON.stringify(cv).slice(0, 8000)}`;
 
     const responseText = await generateGeminiContentWithFallback(ai, prompt);
+    if (!responseText) {
+      return res.json({ correctionsGlobales: [] });
+    }
+
     const parsed = JSON.parse(responseText || '{}');
     res.json(parsed);
   } catch (err: any) {
