@@ -116,7 +116,10 @@ export interface CV {
   photoUrl?: string;
   afficherPhoto?: boolean;
   photoForme?: 'ronde' | 'carree' | 'arrondie' | 'hexagone' | 'arche' | 'galet';
-  photoTaille?: number; // Size in px e.g. 60-180
+  photoTaille?: number; // Size in px e.g. 40-250
+  photoPosition?: 'in-header' | 'in-sidebar';
+  photoAlignement?: 'gauche' | 'centre' | 'droite';
+  photoRayon?: number; // Custom border-radius in px (0 to 100)
   grandTitreMode?: 'nom' | 'poste';
   photoZoom?: number;
   photoCropX?: number;

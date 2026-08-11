@@ -272,14 +272,38 @@ export const VisualCVEditor: React.FC<VisualCVEditorProps> = ({
     if (selectedElement) {
       handleUpdateStyle({ fontFamily: fontName });
     } else {
-      updateDocument((prevDoc) => ({
-        ...prevDoc,
-        theme: {
-          ...prevDoc.theme,
-          police: fontName
-        }
-      }));
+      handleApplyFontToAll(fontName);
     }
+  };
+
+  // Apply page background color
+  const handleApplyPageBackground = (colorHex: string) => {
+    updateDocument((prevDoc) => ({
+      ...prevDoc,
+      settings: { ...prevDoc.settings, backgroundColor: colorHex },
+      pages: prevDoc.pages.map((p) =>
+        p.id === activePageId ? { ...p, background: colorHex } : p
+      )
+    }));
+  };
+
+  // Apply font to all elements and settings
+  const handleApplyFontToAll = (fontName: string) => {
+    updateDocument((prevDoc) => ({
+      ...prevDoc,
+      settings: { ...prevDoc.settings, defaultFont: fontName },
+      theme: { ...prevDoc.theme, police: fontName },
+      pages: prevDoc.pages.map((p) => ({
+        ...p,
+        elements: p.elements.map((el) => ({
+          ...el,
+          style: {
+            ...(el.style || {}),
+            fontFamily: fontName
+          }
+        }))
+      }))
+    }));
   };
 
   // Handle quick alignment
@@ -414,6 +438,10 @@ export const VisualCVEditor: React.FC<VisualCVEditorProps> = ({
             onAlignElement={handleAlignElement}
             pageWidth={document.pages[0]?.width || 794}
             pageHeight={document.pages[0]?.height || 1123}
+            onApplyPageBackground={handleApplyPageBackground}
+            onApplyFontToAll={handleApplyFontToAll}
+            onAddTwoColumnSection={handleAddTwoColumnSection}
+            onAddElement={handleAddElement}
           />
         </div>
       </div>
@@ -497,6 +525,10 @@ export const VisualCVEditor: React.FC<VisualCVEditorProps> = ({
             onAlignElement={handleAlignElement}
             pageWidth={document.pages[0]?.width || 794}
             pageHeight={document.pages[0]?.height || 1123}
+            onApplyPageBackground={handleApplyPageBackground}
+            onApplyFontToAll={handleApplyFontToAll}
+            onAddTwoColumnSection={handleAddTwoColumnSection}
+            onAddElement={handleAddElement}
           />
         </div>
       )}

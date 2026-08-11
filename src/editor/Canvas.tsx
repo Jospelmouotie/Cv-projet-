@@ -72,7 +72,20 @@ export const Canvas: React.FC<CanvasProps> = ({
 
     if (elem.locked) return;
 
-    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    const targetEl = e.target as HTMLElement;
+    if (
+      targetEl.isContentEditable ||
+      targetEl.closest('[contenteditable="true"]') ||
+      targetEl.tagName === 'INPUT' ||
+      targetEl.tagName === 'TEXTAREA' ||
+      targetEl.tagName === 'BUTTON'
+    ) {
+      return;
+    }
+
+    try {
+      targetEl.setPointerCapture(e.pointerId);
+    } catch (_) {}
     setDraggingElementId(elem.id);
 
     dragStartPos.current = {
@@ -232,7 +245,7 @@ export const Canvas: React.FC<CanvasProps> = ({
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
       onClick={() => onSelectElement(null)}
-      className="flex-1 bg-slate-200/80 dark:bg-slate-950 p-4 sm:p-8 overflow-auto flex flex-col items-center space-y-8 select-none touch-pan-x touch-pan-y"
+      className="flex-1 bg-slate-200/80 dark:bg-slate-950 p-4 sm:p-8 overflow-auto flex flex-col items-center space-y-8 touch-pan-x touch-pan-y"
     >
       {document.pages.map((page, pageIdx) => {
         const isActivePage = page.id === activePageId;

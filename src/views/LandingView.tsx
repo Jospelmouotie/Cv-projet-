@@ -8,13 +8,15 @@ interface LandingViewProps {
   onStartCreate: () => void;
   onBrowseTemplates: () => void;
   onImportClick: () => void;
+  onCreateBlankCV?: () => void;
 }
 
 export const LandingView: React.FC<LandingViewProps> = ({
   langue,
   onStartCreate,
   onBrowseTemplates,
-  onImportClick
+  onImportClick,
+  onCreateBlankCV
 }) => {
   const t = (key: Parameters<typeof getTranslation>[1]) => getTranslation(langue, key);
 
@@ -43,7 +45,7 @@ export const LandingView: React.FC<LandingViewProps> = ({
             
             {/* MODE 1: PAGE BLANCHE / ÉDITEUR WORD */}
             <div
-              onClick={onStartCreate}
+              onClick={onCreateBlankCV || onStartCreate}
               className="group bg-gradient-to-br from-blue-600 to-indigo-700 text-white p-8 rounded-3xl shadow-xl shadow-blue-500/20 border border-blue-500/30 hover:scale-[1.02] transition-all cursor-pointer flex flex-col justify-between space-y-6 relative overflow-hidden"
             >
               <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl pointer-events-none" />

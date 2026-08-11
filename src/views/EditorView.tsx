@@ -50,6 +50,7 @@ interface EditorViewProps {
   cv: CV;
   user: User | null;
   langue: Language;
+  initialMode?: 'visual' | 'form';
   onBack: () => void;
   onSaveCV: (cv: CV) => Promise<void>;
   onOpenPayment: (cv: CV) => void;
@@ -60,6 +61,7 @@ export const EditorView: React.FC<EditorViewProps> = ({
   cv: initialCV,
   user,
   langue,
+  initialMode,
   onBack,
   onSaveCV,
   onOpenPayment,
@@ -68,7 +70,13 @@ export const EditorView: React.FC<EditorViewProps> = ({
   const t = (key: Parameters<typeof getTranslation>[1]) => getTranslation(langue, key);
 
   const [cv, setCv] = useState<CV>(initialCV);
-  const [editorMode, setEditorMode] = useState<'visual' | 'form'>('visual');
+  const [editorMode, setEditorMode] = useState<'visual' | 'form'>(initialMode || 'visual');
+
+  useEffect(() => {
+    if (initialMode) {
+      setEditorMode(initialMode);
+    }
+  }, [initialMode]);
   const [activeTab, setActiveTab] = useState<'content' | 'style' | 'preview'>('content');
   const [expandedSectionIds, setExpandedSectionIds] = useState<Record<string, boolean>>({});
   const [columnFilter, setColumnFilter] = useState<'toutes' | 'gauche' | 'droite'>('toutes');
@@ -465,38 +473,138 @@ export const EditorView: React.FC<EditorViewProps> = ({
               /* CONTENT TAB */
               <div className="space-y-4">
                 
-                {/* PHOTO UPLOAD & PHOTO SHAPE SECTION */}
+                {/* 1 / 2 COLUMNS LAYOUT SELECTOR CARD */}
                 <div className="p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs space-y-3">
-                  <label className="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                    <span>Photo de profil</span>
-                  </label>
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                      <Columns className="w-4 h-4 text-blue-600" />
+                      <span>Disposition & Colonnes (1 ou 2 Colonnes)</span>
+                    </label>
+                    <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950 px-2 py-0.5 rounded-md border border-blue-200 dark:border-blue-800">
+                      Mise à jour en direct
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setCv(prev => ({ ...prev, nombreColonnes: 1 }))}
+                      className={`py-2.5 px-3 rounded-xl text-xs font-extrabold border transition-all cursor-pointer flex items-center justify-center gap-2 ${
+                        (cv.nombreColonnes || 2) === 1
+                          ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-500/20'
+                          : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100'
+                      }`}
+                    >
+                      <span>📄 1 Colonne Simple</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setCv(prev => ({ ...prev, nombreColonnes: 2 }))}
+                      className={`py-2.5 px-3 rounded-xl text-xs font-extrabold border transition-all cursor-pointer flex items-center justify-center gap-2 ${
+                        (cv.nombreColonnes || 2) === 2
+                          ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-500/20'
+                          : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100'
+                      }`}
+                    >
+                      <span>📊 2 Colonnes</span>
+                    </button>
+                  </div>
+
+                  {/* 2-Columns Settings */}
+                  {(cv.nombreColonnes || 2) === 2 && (
+                    <div className="pt-3 border-t border-slate-100 dark:border-slate-800 space-y-3 animate-fadeIn">
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setCv(prev => ({ ...prev, positionSidebar: 'gauche' }))}
+                          className={`py-1.5 px-2.5 rounded-lg text-[11px] font-bold border transition-all cursor-pointer ${
+                            (cv.positionSidebar || 'gauche') === 'gauche'
+                              ? 'bg-indigo-600 text-white border-indigo-600'
+                              : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700'
+                          }`}
+                        >
+                          ⬅️ Sidebar à Gauche
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setCv(prev => ({ ...prev, positionSidebar: 'droite' }))}
+                          className={`py-1.5 px-2.5 rounded-lg text-[11px] font-bold border transition-all cursor-pointer ${
+                            (cv.positionSidebar || 'gauche') === 'droite'
+                              ? 'bg-indigo-600 text-white border-indigo-600'
+                              : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700'
+                          }`}
+                        >
+                          ➡️ Sidebar à Droite
+                        </button>
+                      </div>
+
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-[11px] font-bold text-slate-600 dark:text-slate-400">
+                          <span>Largeur de la Sidebar :</span>
+                          <span className="text-blue-600 dark:text-blue-400">{cv.largeurColonneGauche || 34}%</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="20"
+                          max="50"
+                          value={cv.largeurColonneGauche || 34}
+                          onChange={(e) => setCv(prev => ({ ...prev, largeurColonneGauche: parseInt(e.target.value) }))}
+                          className="w-full accent-blue-600 cursor-pointer h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* DYNAMIC PHOTO CUSTOMIZATION SECTION */}
+                <div className="p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs space-y-4">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                      <CameraIcon className="w-4 h-4 text-blue-600" />
+                      <span>Photo de Profil Personnalisée</span>
+                    </label>
+                    {cv.photoUrl && (
+                      <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950 px-2 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800">
+                        Totalement Dynamique
+                      </span>
+                    )}
+                  </div>
 
                   <div className="flex items-center gap-4">
                     {cv.photoUrl ? (
-                      <div className="relative group">
+                      <div className="relative group shrink-0">
                         <img
                           src={cv.photoUrl}
                           alt="Profil"
-                          className="w-16 h-16 rounded-full object-cover border-2 border-blue-600 shadow-md"
+                          className="object-cover border-2 border-blue-600 shadow-md transition-all"
+                          style={{
+                            width: `${cv.photoTaille || 72}px`,
+                            height: `${cv.photoTaille || 72}px`,
+                            borderRadius: cv.photoRayon !== undefined ? `${cv.photoRayon}px` : (
+                              cv.photoForme === 'carree' ? '0px' :
+                              cv.photoForme === 'arrondie' ? '12px' :
+                              cv.photoForme === 'arche' ? '999px 999px 8px 8px' : '9999px'
+                            )
+                          }}
                         />
                         <button
                           type="button"
                           onClick={() => setCv(prev => ({ ...prev, photoUrl: undefined }))}
-                          className="absolute -top-1 -right-1 bg-red-600 text-white p-1 rounded-full shadow-lg hover:bg-red-700"
+                          className="absolute -top-2 -right-2 bg-red-600 text-white p-1 rounded-full shadow-lg hover:bg-red-700 transition-transform hover:scale-110 cursor-pointer"
                           title="Supprimer la photo"
                         >
-                          <Trash2 className="w-3 h-3" />
+                          <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     ) : (
-                      <div className="w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-800 border-2 border-dashed border-slate-300 dark:border-slate-700 flex items-center justify-center text-slate-400">
+                      <div className="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-slate-800 border-2 border-dashed border-slate-300 dark:border-slate-700 flex items-center justify-center text-slate-400 shrink-0">
                         <CameraIcon className="w-6 h-6" />
                       </div>
                     )}
 
                     <div className="flex-1 space-y-2">
-                      <label className="inline-block px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs rounded-xl cursor-pointer transition-colors">
-                        <span>{cv.photoUrl ? 'Changer la photo' : 'Ajouter une photo'}</span>
+                      <label className="inline-block px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-xl cursor-pointer shadow-md shadow-blue-500/20 transition-all">
+                        <span>{cv.photoUrl ? 'Changer la photo' : 'Importer une photo'}</span>
                         <input
                           type="file"
                           accept="image/*"
@@ -504,8 +612,140 @@ export const EditorView: React.FC<EditorViewProps> = ({
                           className="hidden"
                         />
                       </label>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                        Position, taille, forme et bordures 100% configurables en temps réel.
+                      </p>
                     </div>
                   </div>
+
+                  {/* ADVANCED DYNAMIC PHOTO CONTROLS (AVAILABLE WHEN PHOTO EXISTS) */}
+                  {cv.photoUrl && (
+                    <div className="pt-3 border-t border-slate-100 dark:border-slate-800 space-y-3.5 animate-fadeIn">
+                      
+                      {/* 1. Size Slider */}
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-xs font-bold text-slate-700 dark:text-slate-300">
+                          <span>Taille de la photo :</span>
+                          <span className="text-blue-600 dark:text-blue-400 font-mono">{cv.photoTaille || 80} px</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="40"
+                          max="220"
+                          value={cv.photoTaille || 80}
+                          onChange={(e) => setCv(prev => ({ ...prev, photoTaille: parseInt(e.target.value) }))}
+                          className="w-full accent-blue-600 cursor-pointer h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg"
+                        />
+                      </div>
+
+                      {/* 2. Position / Emplacement */}
+                      <div className="space-y-1.5">
+                        <span className="text-xs font-bold text-slate-700 dark:text-slate-300">Emplacement de la photo :</span>
+                        <div className="grid grid-cols-2 gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setCv(prev => ({ ...prev, photoPosition: 'in-header' }))}
+                            className={`py-1.5 px-2.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                              (cv.photoPosition || 'in-header') === 'in-header'
+                                ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                                : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
+                            }`}
+                          >
+                            🔝 Dans l'En-tête (Top)
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setCv(prev => ({ ...prev, photoPosition: 'in-sidebar' }))}
+                            className={`py-1.5 px-2.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                              cv.photoPosition === 'in-sidebar'
+                                ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                                : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
+                            }`}
+                          >
+                            👈 Dans la Sidebar
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* 3. Shape Selector & Custom Border Radius */}
+                      <div className="space-y-2">
+                        <span className="text-xs font-bold text-slate-700 dark:text-slate-300">Forme de la photo :</span>
+                        <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5">
+                          {[
+                            { id: 'ronde', label: '🔴 Ronde' },
+                            { id: 'carree', label: '⬛ Carrée' },
+                            { id: 'arrondie', label: '🔲 Arrondie' },
+                            { id: 'arche', label: '🏛️ Arche' },
+                            { id: 'hexagone', label: '⬢ Hexagone' },
+                            { id: 'galet', label: '🪨 Galet' },
+                          ].map(shape => (
+                            <button
+                              key={shape.id}
+                              type="button"
+                              onClick={() => setCv(prev => ({ ...prev, photoForme: shape.id as any, photoRayon: undefined }))}
+                              className={`py-1.5 px-1 rounded-xl text-[11px] font-bold border transition-all cursor-pointer text-center ${
+                                (cv.photoForme || 'ronde') === shape.id && cv.photoRayon === undefined
+                                  ? 'bg-blue-600 text-white border-blue-600'
+                                  : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
+                              }`}
+                            >
+                              {shape.label}
+                            </button>
+                          ))}
+                        </div>
+
+                        {/* Custom Border Radius Slider */}
+                        <div className="space-y-1 pt-1">
+                          <div className="flex justify-between text-[11px] font-bold text-slate-600 dark:text-slate-400">
+                            <span>Rayon d'arrondi sur-mesure (0px = carré, 100px = rond) :</span>
+                            <span className="text-blue-600 dark:text-blue-400 font-mono">{cv.photoRayon ?? (cv.photoForme === 'carree' ? 0 : 50)} px</span>
+                          </div>
+                          <input
+                            type="range"
+                            min="0"
+                            max="100"
+                            value={cv.photoRayon ?? (cv.photoForme === 'carree' ? 0 : 50)}
+                            onChange={(e) => setCv(prev => ({ ...prev, photoRayon: parseInt(e.target.value) }))}
+                            className="w-full accent-blue-600 cursor-pointer h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg"
+                          />
+                        </div>
+                      </div>
+
+                      {/* 4. Border Thickness & Color */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                        <div className="space-y-1">
+                          <div className="flex justify-between text-[11px] font-bold text-slate-600 dark:text-slate-400">
+                            <span>Épaisseur de bordure :</span>
+                            <span className="text-blue-600 dark:text-blue-400 font-mono">{cv.photoBordureEpaisseur ?? 2} px</span>
+                          </div>
+                          <input
+                            type="range"
+                            min="0"
+                            max="10"
+                            value={cv.photoBordureEpaisseur ?? 2}
+                            onChange={(e) => setCv(prev => ({ ...prev, photoBordureEpaisseur: parseInt(e.target.value) }))}
+                            className="w-full accent-blue-600 cursor-pointer h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg"
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <span className="text-[11px] font-bold text-slate-600 dark:text-slate-400">Couleur de bordure :</span>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="color"
+                              value={cv.photoBordureCouleur || '#FFFFFF'}
+                              onChange={(e) => setCv(prev => ({ ...prev, photoBordureCouleur: e.target.value }))}
+                              className="w-8 h-8 rounded-lg border border-slate-300 dark:border-slate-700 cursor-pointer p-0.5 bg-white dark:bg-slate-800"
+                            />
+                            <span className="text-xs font-mono text-slate-600 dark:text-slate-400 uppercase">
+                              {cv.photoBordureCouleur || '#FFFFFF'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                    </div>
+                  )}
                 </div>
 
                 {/* SECTIONS LIST WITH DND & CONTROLS */}

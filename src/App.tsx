@@ -51,6 +51,7 @@ export default function App() {
 
   const [cvs, setCvs] = useState<CV[]>([]);
   const [activeCV, setActiveCV] = useState<CV | null>(null);
+  const [editorInitialMode, setEditorInitialMode] = useState<'visual' | 'form'>('visual');
   const [paymentModalCV, setPaymentModalCV] = useState<CV | null>(null);
 
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -75,7 +76,7 @@ export default function App() {
   }, [user]);
 
   // Create new CV from Template
-  const handleCreateFromTemplate = async (template: CVTemplate) => {
+  const handleCreateFromTemplate = async (template: CVTemplate, targetMode: 'visual' | 'form' = 'visual') => {
     try {
       const res = await fetch('/api/cv', {
         method: 'POST',
@@ -86,7 +87,37 @@ export default function App() {
           templateId: template.id,
           langue,
           couleurAccent: template.defaultAccent,
-          police: template.defaultFont
+          police: template.defaultFont,
+          isBlank: false
+        })
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        await fetchUserCVs();
+        setActiveCV(data.cv);
+        setEditorInitialMode(targetMode);
+        setCurrentView('editor');
+      }
+    } catch (err) {
+      console.error('Error creating CV:', err);
+    }
+  };
+
+  // Create Blank CV from Scratch
+  const handleCreateBlankCV = async () => {
+    try {
+      const res = await fetch('/api/cv', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          utilisateurId: user?.id || 'u-demo-1',
+          titre: 'Nouveau CV Vierge',
+          templateId: 'moderne-1',
+          langue,
+          couleurAccent: '#2563EB',
+          police: 'Inter',
+          isBlank: true
         })
       });
 
@@ -97,7 +128,7 @@ export default function App() {
         setCurrentView('editor');
       }
     } catch (err) {
-      console.error('Error creating CV:', err);
+      console.error('Error creating blank CV:', err);
     }
   };
 
@@ -276,9 +307,10 @@ export default function App() {
         {currentView === 'home' && (
           <LandingView
             langue={langue}
-            onStartCreate={() => setCurrentView('gallery')}
+            onStartCreate={handleCreateBlankCV}
             onBrowseTemplates={() => setCurrentView('gallery')}
             onImportClick={() => setShowImportModal(true)}
+            onCreateBlankCV={handleCreateBlankCV}
           />
         )}
 
@@ -287,6 +319,7 @@ export default function App() {
             cvs={cvs}
             langue={langue}
             onCreateNew={() => setCurrentView('gallery')}
+            onCreateBlankCV={handleCreateBlankCV}
             onImportClick={() => setShowImportModal(true)}
             onEditCV={(cv) => {
               setActiveCV(cv);
@@ -314,6 +347,7 @@ export default function App() {
           <GalleryView
             langue={langue}
             onSelectTemplate={handleCreateFromTemplate}
+            onCreateBlankCV={handleCreateBlankCV}
           />
         )}
 
@@ -322,6 +356,7 @@ export default function App() {
             cv={activeCV}
             user={user}
             langue={langue}
+            initialMode={editorInitialMode}
             onBack={() => setCurrentView('dashboard')}
             onSaveCV={handleSaveCV}
             onOpenPayment={(cv) => setPaymentModalCV(cv)}

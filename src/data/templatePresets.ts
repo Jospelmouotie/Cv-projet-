@@ -1838,3 +1838,42 @@ export function getPresetForTemplate(templateId: string, langue: Language = 'fr'
   }
   return TEMPLATE_PRESETS['modele-1'];
 }
+
+export function getCleanPresetForTemplate(templateId: string, langue: Language = 'fr'): CVTemplatePreset {
+  const base = getPresetForTemplate(templateId, langue);
+  
+  const cleanSections: Section[] = base.sections.map((sec) => {
+    if (sec.type === 'profil') {
+      return {
+        ...sec,
+        contenu: {
+          nomComplet: '',
+          titreProfessionnel: '',
+          email: '',
+          telephone: '',
+          adresse: '',
+          website: '',
+          linkedin: '',
+          resume: ''
+        }
+      };
+    }
+    if (['experience', 'formation', 'competences', 'langues', 'interets', 'certifications', 'projets', 'benevolat', 'publications'].includes(sec.type)) {
+      return {
+        ...sec,
+        contenu: []
+      };
+    }
+    return {
+      ...sec,
+      contenu: typeof sec.contenu === 'object' && !Array.isArray(sec.contenu) ? {} : []
+    };
+  });
+
+  return {
+    ...base,
+    photoUrl: '', // No stranger photo defaulted
+    sections: cleanSections
+  };
+}
+

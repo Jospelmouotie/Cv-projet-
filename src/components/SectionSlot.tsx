@@ -23,6 +23,7 @@ interface SectionSlotProps {
   isReorderActive?: boolean;
   onToggleExpand?: () => void;
   isExpanded?: boolean;
+  onUpdateSection?: (updatedSection: Section) => void;
 }
 
 export const SectionSlot: React.FC<SectionSlotProps> = ({
@@ -44,7 +45,8 @@ export const SectionSlot: React.FC<SectionSlotProps> = ({
   dragHandleProps,
   isReorderActive = false,
   onToggleExpand,
-  isExpanded = true
+  isExpanded = true,
+  onUpdateSection
 }) => {
   if (!section.visible) return null;
 
@@ -77,9 +79,75 @@ export const SectionSlot: React.FC<SectionSlotProps> = ({
 
   const titleAlignClass = titleAlign === 'center' ? 'text-center justify-center' : titleAlign === 'right' ? 'text-right justify-end' : 'text-left justify-start';
 
+  const handleTitleBlur = (e: React.FocusEvent<HTMLElement>) => {
+    if (!onUpdateSection) return;
+    const newTitle = e.currentTarget.innerText;
+    if (newTitle !== section.titre) {
+      onUpdateSection({ ...section, titre: newTitle });
+    }
+  };
+
+  const handleProfilBlur = (field: string, value: string) => {
+    if (!onUpdateSection) return;
+    onUpdateSection({
+      ...section,
+      contenu: {
+        ...(section.contenu || {}),
+        [field]: value
+      }
+    });
+  };
+
+  const updateExpItem = (idx: number, field: string, val: string) => {
+    if (!onUpdateSection) return;
+    const list = Array.isArray(section.contenu) ? [...(section.contenu as ExperienceItem[])] : [];
+    if (list[idx]) {
+      list[idx] = { ...list[idx], [field]: val };
+      onUpdateSection({ ...section, contenu: list });
+    }
+  };
+
+  const updateEduItem = (idx: number, field: string, val: string) => {
+    if (!onUpdateSection) return;
+    const list = Array.isArray(section.contenu) ? [...(section.contenu as FormationItem[])] : [];
+    if (list[idx]) {
+      list[idx] = { ...list[idx], [field]: val };
+      onUpdateSection({ ...section, contenu: list });
+    }
+  };
+
+  const updateSkillItem = (idx: number, field: string, val: string) => {
+    if (!onUpdateSection) return;
+    const list = Array.isArray(section.contenu) ? [...(section.contenu as CompetenceItem[])] : [];
+    if (list[idx]) {
+      list[idx] = { ...list[idx], [field]: val };
+      onUpdateSection({ ...section, contenu: list });
+    }
+  };
+
+  const updateLangueItem = (idx: number, field: string, val: string) => {
+    if (!onUpdateSection) return;
+    const list = Array.isArray(section.contenu) ? [...(section.contenu as LangueItem[])] : [];
+    if (list[idx]) {
+      list[idx] = { ...list[idx], [field]: val };
+      onUpdateSection({ ...section, contenu: list });
+    }
+  };
+
   // Helper for Section Titles
   const renderHeader = () => {
     const headerFontSize = titleFontSizePt ? `${titleFontSizePt}pt` : '1.1em';
+
+    const renderTitleEditable = (extraClass: string = '') => (
+      <span
+        contentEditable={Boolean(onUpdateSection)}
+        suppressContentEditableWarning
+        onBlur={handleTitleBlur}
+        className={`outline-none cursor-text ${extraClass}`}
+      >
+        {formattedTitle}
+      </span>
+    );
 
     switch (effectiveHeaderStyle) {
       case 'pill':
@@ -89,7 +157,7 @@ export const SectionSlot: React.FC<SectionSlotProps> = ({
               className="px-3 py-1 font-bold rounded-full inline-block shadow-2xs"
               style={{ backgroundColor: accentColor, color: '#FFFFFF', fontSize: headerFontSize }}
             >
-              {formattedTitle}
+              {renderTitleEditable()}
             </span>
           </div>
         );
@@ -99,7 +167,7 @@ export const SectionSlot: React.FC<SectionSlotProps> = ({
             className={`mb-2.5 px-3 py-1.5 rounded-md font-black tracking-wider shadow-2xs ${titleAlignClass}`}
             style={{ backgroundColor: accentColor, color: '#FFFFFF', fontSize: headerFontSize }}
           >
-            {formattedTitle}
+            {renderTitleEditable()}
           </div>
         );
       case 'left-border':
@@ -107,7 +175,7 @@ export const SectionSlot: React.FC<SectionSlotProps> = ({
           <div className={`mb-1 flex items-center gap-1.5 ${titleAlignClass}`}>
             <div className="w-1 h-3.5 rounded-full shrink-0" style={{ backgroundColor: accentColor }} />
             <h3 className="font-extrabold tracking-wide" style={titleStyleObj}>
-              {formattedTitle}
+              {renderTitleEditable()}
             </h3>
           </div>
         );
@@ -117,14 +185,14 @@ export const SectionSlot: React.FC<SectionSlotProps> = ({
             className="mb-1 p-1 rounded border font-black tracking-wider text-center"
             style={{ borderColor: accentColor, backgroundColor: secondaryAccentColor + '33', ...titleStyleObj }}
           >
-            {formattedTitle}
+            {renderTitleEditable()}
           </div>
         );
       case 'stars':
         return (
           <div className="mb-1 flex items-center justify-between border-b pb-0.5" style={{ borderColor: accentColor + '44' }}>
             <h3 className="font-black tracking-wider" style={titleStyleObj}>
-              {formattedTitle}
+              {renderTitleEditable()}
             </h3>
             <div className="flex items-center space-x-0.5" style={{ color: accentColor }}>
               <Star className="w-2.5 h-2.5 fill-current" />
@@ -136,7 +204,7 @@ export const SectionSlot: React.FC<SectionSlotProps> = ({
         return (
           <div className="mb-1 border-b border-t py-0.5" style={{ borderColor: accentColor }}>
             <h3 className="font-black tracking-widest text-center" style={titleStyleObj}>
-              {formattedTitle}
+              {renderTitleEditable()}
             </h3>
           </div>
         );
@@ -146,7 +214,7 @@ export const SectionSlot: React.FC<SectionSlotProps> = ({
             className={`mb-1 px-2.5 py-1 rounded-t-xl rounded-b-xs font-black tracking-wider text-white ${titleAlignClass}`}
             style={{ backgroundColor: accentColor, fontSize: headerFontSize }}
           >
-            {formattedTitle}
+            {renderTitleEditable()}
           </div>
         );
       case 'badge-header':
@@ -156,7 +224,7 @@ export const SectionSlot: React.FC<SectionSlotProps> = ({
               className="px-2.5 py-0.5 font-black rounded inline-block border-l-2"
               style={{ backgroundColor: secondaryAccentColor + '44', borderColor: accentColor, color: effectiveHeadingColor, fontSize: headerFontSize }}
             >
-              {formattedTitle}
+              {renderTitleEditable()}
             </span>
           </div>
         );
@@ -164,7 +232,7 @@ export const SectionSlot: React.FC<SectionSlotProps> = ({
         return (
           <div className={`mb-1 ${titleAlignClass}`}>
             <h3 className="font-extrabold tracking-widest" style={titleStyleObj}>
-              {formattedTitle}
+              {renderTitleEditable()}
             </h3>
           </div>
         );
@@ -173,7 +241,7 @@ export const SectionSlot: React.FC<SectionSlotProps> = ({
         return (
           <div className="mb-1 border-b pb-0.5" style={{ borderColor: accentColor }}>
             <h3 className="font-extrabold tracking-wider" style={titleStyleObj}>
-              {formattedTitle}
+              {renderTitleEditable()}
             </h3>
           </div>
         );
@@ -196,33 +264,19 @@ export const SectionSlot: React.FC<SectionSlotProps> = ({
   };
 
   // Helper for multi-line description & bullet lists
-  const renderFormattedDescription = (desc: string | undefined) => {
-    if (!desc) return null;
-    const rawLines = desc.split('\n').map(l => l.trim()).filter(Boolean);
-    if (rawLines.length === 0) return null;
-
-    if (rawLines.length === 1 && !rawLines[0].match(/^[•\-\*\d+\.]/)) {
-      return (
-        <p className="opacity-85 mt-0.5 text-[0.95em]">
-          {rawLines[0]}
-        </p>
-      );
-    }
+  const renderFormattedDescription = (desc: string | undefined, onUpdate?: (val: string) => void) => {
+    if (!desc && !onUpdate) return null;
+    const textVal = desc || '';
 
     return (
-      <ul className="mt-1 space-y-0.5 text-[0.95em]">
-        {rawLines.map((line, idx) => {
-          const cleanLine = line.replace(/^[•\-\*\d+\.]\s*/, '');
-          return (
-            <li key={idx} className="flex items-start gap-1.5 opacity-90">
-              <span className="shrink-0 font-bold select-none text-[0.9em]" style={{ color: accentColor }}>
-                {getBulletPrefix(idx)}
-              </span>
-              <span>{cleanLine}</span>
-            </li>
-          );
-        })}
-      </ul>
+      <div
+        contentEditable={Boolean(onUpdate)}
+        suppressContentEditableWarning
+        onBlur={(e) => onUpdate?.(e.currentTarget.innerText)}
+        className="opacity-90 mt-0.5 text-[0.95em] outline-none cursor-text whitespace-pre-line"
+      >
+        {textVal}
+      </div>
     );
   };
 
@@ -262,40 +316,80 @@ export const SectionSlot: React.FC<SectionSlotProps> = ({
         {/* PROFIL / CONTACT */}
         {section.type === 'profil' && (
           <div className="space-y-1">
-            {section.contenu?.resume && (
-              <p className="opacity-90 whitespace-pre-line mb-1">
+            {section.contenu?.resume !== undefined && (
+              <p
+                contentEditable={Boolean(onUpdateSection)}
+                suppressContentEditableWarning
+                onBlur={(e) => handleProfilBlur('resume', e.currentTarget.innerText)}
+                className="opacity-90 whitespace-pre-line mb-1 outline-none cursor-text"
+              >
                 {section.contenu.resume}
               </p>
             )}
             <div className="grid grid-cols-1 gap-1">
-              {section.contenu?.email && (
+              {section.contenu?.email !== undefined && (
                 <div className="flex items-center gap-1.5">
                   <Mail className="w-3 h-3 shrink-0 opacity-80" style={{ color: accentColor }} />
-                  <span className="break-all">{section.contenu.email}</span>
+                  <span
+                    contentEditable={Boolean(onUpdateSection)}
+                    suppressContentEditableWarning
+                    onBlur={(e) => handleProfilBlur('email', e.currentTarget.innerText)}
+                    className="break-all outline-none cursor-text"
+                  >
+                    {section.contenu.email}
+                  </span>
                 </div>
               )}
-              {section.contenu?.telephone && (
+              {section.contenu?.telephone !== undefined && (
                 <div className="flex items-center gap-1.5">
                   <Phone className="w-3 h-3 shrink-0 opacity-80" style={{ color: accentColor }} />
-                  <span>{section.contenu.telephone}</span>
+                  <span
+                    contentEditable={Boolean(onUpdateSection)}
+                    suppressContentEditableWarning
+                    onBlur={(e) => handleProfilBlur('telephone', e.currentTarget.innerText)}
+                    className="outline-none cursor-text"
+                  >
+                    {section.contenu.telephone}
+                  </span>
                 </div>
               )}
-              {section.contenu?.adresse && (
+              {section.contenu?.adresse !== undefined && (
                 <div className="flex items-center gap-1.5">
                   <MapPin className="w-3 h-3 shrink-0 opacity-80" style={{ color: accentColor }} />
-                  <span>{section.contenu.adresse}</span>
+                  <span
+                    contentEditable={Boolean(onUpdateSection)}
+                    suppressContentEditableWarning
+                    onBlur={(e) => handleProfilBlur('adresse', e.currentTarget.innerText)}
+                    className="outline-none cursor-text"
+                  >
+                    {section.contenu.adresse}
+                  </span>
                 </div>
               )}
-              {section.contenu?.siteWeb && (
+              {section.contenu?.siteWeb !== undefined && (
                 <div className="flex items-center gap-1.5">
                   <Globe className="w-3 h-3 shrink-0 opacity-80" style={{ color: accentColor }} />
-                  <span className="break-all">{section.contenu.siteWeb}</span>
+                  <span
+                    contentEditable={Boolean(onUpdateSection)}
+                    suppressContentEditableWarning
+                    onBlur={(e) => handleProfilBlur('siteWeb', e.currentTarget.innerText)}
+                    className="break-all outline-none cursor-text"
+                  >
+                    {section.contenu.siteWeb}
+                  </span>
                 </div>
               )}
-              {section.contenu?.linkedin && (
+              {section.contenu?.linkedin !== undefined && (
                 <div className="flex items-center gap-1.5">
                   <Globe className="w-3 h-3 shrink-0 opacity-80" style={{ color: accentColor }} />
-                  <span className="break-all">{section.contenu.linkedin}</span>
+                  <span
+                    contentEditable={Boolean(onUpdateSection)}
+                    suppressContentEditableWarning
+                    onBlur={(e) => handleProfilBlur('linkedin', e.currentTarget.innerText)}
+                    className="break-all outline-none cursor-text"
+                  >
+                    {section.contenu.linkedin}
+                  </span>
                 </div>
               )}
             </div>
@@ -310,31 +404,92 @@ export const SectionSlot: React.FC<SectionSlotProps> = ({
 
               if (effectiveDatesAlign === 'left' && !isSidebar) {
                 return (
-                  <div key={exp.id} className="grid grid-cols-1 sm:grid-cols-4 gap-2 border-b border-slate-100 last:border-0 pb-2 last:pb-0">
+                  <div key={exp.id || expIdx} className="grid grid-cols-1 sm:grid-cols-4 gap-2 border-b border-slate-100 last:border-0 pb-2 last:pb-0">
                     <div className="font-bold opacity-75 sm:col-span-1" style={{ color: accentColor }}>
-                      {datesText}
+                      <span
+                        contentEditable={Boolean(onUpdateSection)}
+                        suppressContentEditableWarning
+                        onBlur={(e) => updateExpItem(expIdx, 'dateDebut', e.currentTarget.innerText)}
+                        className="outline-none cursor-text"
+                      >
+                        {datesText}
+                      </span>
                     </div>
                     <div className="sm:col-span-3 space-y-1">
-                      <div className="font-extrabold uppercase tracking-tight">{exp.poste}</div>
-                      <div className="font-semibold opacity-90">{exp.entreprise} {exp.ville ? `| ${exp.ville}` : ''}</div>
-                      {renderFormattedDescription(exp.description)}
+                      <div
+                        contentEditable={Boolean(onUpdateSection)}
+                        suppressContentEditableWarning
+                        onBlur={(e) => updateExpItem(expIdx, 'poste', e.currentTarget.innerText)}
+                        className="font-extrabold uppercase tracking-tight outline-none cursor-text"
+                      >
+                        {exp.poste}
+                      </div>
+                      <div className="font-semibold opacity-90">
+                        <span
+                          contentEditable={Boolean(onUpdateSection)}
+                          suppressContentEditableWarning
+                          onBlur={(e) => updateExpItem(expIdx, 'entreprise', e.currentTarget.innerText)}
+                          className="outline-none cursor-text"
+                        >
+                          {exp.entreprise}
+                        </span>
+                        {exp.ville && (
+                          <span> | <span
+                            contentEditable={Boolean(onUpdateSection)}
+                            suppressContentEditableWarning
+                            onBlur={(e) => updateExpItem(expIdx, 'ville', e.currentTarget.innerText)}
+                            className="outline-none cursor-text"
+                          >{exp.ville}</span></span>
+                        )}
+                      </div>
+                      {renderFormattedDescription(exp.description, (val) => updateExpItem(expIdx, 'description', val))}
                     </div>
                   </div>
                 );
               }
 
               return (
-                <div key={exp.id} className="space-y-1 border-b border-slate-100/50 last:border-0 pb-1.5 last:pb-0">
+                <div key={exp.id || expIdx} className="space-y-1 border-b border-slate-100/50 last:border-0 pb-1.5 last:pb-0">
                   <div className="flex items-start justify-between flex-wrap gap-1">
-                    <span className="font-bold uppercase tracking-tight">{exp.poste}</span>
+                    <span
+                      contentEditable={Boolean(onUpdateSection)}
+                      suppressContentEditableWarning
+                      onBlur={(e) => updateExpItem(expIdx, 'poste', e.currentTarget.innerText)}
+                      className="font-bold uppercase tracking-tight outline-none cursor-text"
+                    >
+                      {exp.poste}
+                    </span>
                     {datesText && (
-                      <span className="text-[0.85em] font-bold px-1.5 py-0.5 rounded" style={{ backgroundColor: secondaryAccentColor + '44', color: accentColor }}>
+                      <span
+                        contentEditable={Boolean(onUpdateSection)}
+                        suppressContentEditableWarning
+                        onBlur={(e) => updateExpItem(expIdx, 'dateDebut', e.currentTarget.innerText)}
+                        className="text-[0.85em] font-bold px-1.5 py-0.5 rounded outline-none cursor-text"
+                        style={{ backgroundColor: secondaryAccentColor + '44', color: accentColor }}
+                      >
                         {datesText}
                       </span>
                     )}
                   </div>
-                  <div className="font-semibold opacity-90">{exp.entreprise} {exp.ville ? `| ${exp.ville}` : ''}</div>
-                  {renderFormattedDescription(exp.description)}
+                  <div className="font-semibold opacity-90">
+                    <span
+                      contentEditable={Boolean(onUpdateSection)}
+                      suppressContentEditableWarning
+                      onBlur={(e) => updateExpItem(expIdx, 'entreprise', e.currentTarget.innerText)}
+                      className="outline-none cursor-text"
+                    >
+                      {exp.entreprise}
+                    </span>
+                    {exp.ville && (
+                      <span> | <span
+                        contentEditable={Boolean(onUpdateSection)}
+                        suppressContentEditableWarning
+                        onBlur={(e) => updateExpItem(expIdx, 'ville', e.currentTarget.innerText)}
+                        className="outline-none cursor-text"
+                      >{exp.ville}</span></span>
+                    )}
+                  </div>
+                  {renderFormattedDescription(exp.description, (val) => updateExpItem(expIdx, 'description', val))}
                 </div>
               );
             })}
@@ -344,36 +499,97 @@ export const SectionSlot: React.FC<SectionSlotProps> = ({
         {/* FORMATION */}
         {section.type === 'formation' && (
           <div className="space-y-2">
-            {(section.contenu as FormationItem[])?.map((edu) => {
+            {(section.contenu as FormationItem[])?.map((edu, eduIdx) => {
               const datesText = `${edu.dateDebut || ''} ${edu.dateFin ? `- ${edu.dateFin}` : ''}`.trim();
 
               if (effectiveDatesAlign === 'left' && !isSidebar) {
                 return (
-                  <div key={edu.id} className="grid grid-cols-1 sm:grid-cols-4 gap-2 border-b border-slate-100 last:border-0 pb-1.5 last:pb-0">
+                  <div key={edu.id || eduIdx} className="grid grid-cols-1 sm:grid-cols-4 gap-2 border-b border-slate-100 last:border-0 pb-1.5 last:pb-0">
                     <div className="font-bold opacity-75 sm:col-span-1" style={{ color: accentColor }}>
-                      {datesText}
+                      <span
+                        contentEditable={Boolean(onUpdateSection)}
+                        suppressContentEditableWarning
+                        onBlur={(e) => updateEduItem(eduIdx, 'dateDebut', e.currentTarget.innerText)}
+                        className="outline-none cursor-text"
+                      >
+                        {datesText}
+                      </span>
                     </div>
                     <div className="sm:col-span-3 space-y-0.5">
-                      <div className="font-extrabold uppercase tracking-tight">{edu.diplome}</div>
-                      <div className="font-semibold opacity-90">{edu.etablissement} {edu.ville ? `| ${edu.ville}` : ''}</div>
-                      {renderFormattedDescription(edu.description)}
+                      <div
+                        contentEditable={Boolean(onUpdateSection)}
+                        suppressContentEditableWarning
+                        onBlur={(e) => updateEduItem(eduIdx, 'diplome', e.currentTarget.innerText)}
+                        className="font-extrabold uppercase tracking-tight outline-none cursor-text"
+                      >
+                        {edu.diplome}
+                      </div>
+                      <div className="font-semibold opacity-90">
+                        <span
+                          contentEditable={Boolean(onUpdateSection)}
+                          suppressContentEditableWarning
+                          onBlur={(e) => updateEduItem(eduIdx, 'etablissement', e.currentTarget.innerText)}
+                          className="outline-none cursor-text"
+                        >
+                          {edu.etablissement}
+                        </span>
+                        {edu.ville && (
+                          <span> | <span
+                            contentEditable={Boolean(onUpdateSection)}
+                            suppressContentEditableWarning
+                            onBlur={(e) => updateEduItem(eduIdx, 'ville', e.currentTarget.innerText)}
+                            className="outline-none cursor-text"
+                          >{edu.ville}</span></span>
+                        )}
+                      </div>
+                      {renderFormattedDescription(edu.description, (val) => updateEduItem(eduIdx, 'description', val))}
                     </div>
                   </div>
                 );
               }
 
               return (
-                <div key={edu.id} className="space-y-1 border-b border-slate-100/50 last:border-0 pb-1.5 last:pb-0">
+                <div key={edu.id || eduIdx} className="space-y-1 border-b border-slate-100/50 last:border-0 pb-1.5 last:pb-0">
                   <div className="flex items-start justify-between flex-wrap gap-1">
-                    <span className="font-bold uppercase tracking-tight">{edu.diplome}</span>
+                    <span
+                      contentEditable={Boolean(onUpdateSection)}
+                      suppressContentEditableWarning
+                      onBlur={(e) => updateEduItem(eduIdx, 'diplome', e.currentTarget.innerText)}
+                      className="font-bold uppercase tracking-tight outline-none cursor-text"
+                    >
+                      {edu.diplome}
+                    </span>
                     {datesText && (
-                      <span className="text-[0.85em] font-bold px-1.5 py-0.5 rounded" style={{ backgroundColor: secondaryAccentColor + '44', color: accentColor }}>
+                      <span
+                        contentEditable={Boolean(onUpdateSection)}
+                        suppressContentEditableWarning
+                        onBlur={(e) => updateEduItem(eduIdx, 'dateDebut', e.currentTarget.innerText)}
+                        className="text-[0.85em] font-bold px-1.5 py-0.5 rounded outline-none cursor-text"
+                        style={{ backgroundColor: secondaryAccentColor + '44', color: accentColor }}
+                      >
                         {datesText}
                       </span>
                     )}
                   </div>
-                  <div className="font-semibold opacity-90">{edu.etablissement} {edu.ville ? `| ${edu.ville}` : ''}</div>
-                  {renderFormattedDescription(edu.description)}
+                  <div className="font-semibold opacity-90">
+                    <span
+                      contentEditable={Boolean(onUpdateSection)}
+                      suppressContentEditableWarning
+                      onBlur={(e) => updateEduItem(eduIdx, 'etablissement', e.currentTarget.innerText)}
+                      className="outline-none cursor-text"
+                    >
+                      {edu.etablissement}
+                    </span>
+                    {edu.ville && (
+                      <span> | <span
+                        contentEditable={Boolean(onUpdateSection)}
+                        suppressContentEditableWarning
+                        onBlur={(e) => updateEduItem(eduIdx, 'ville', e.currentTarget.innerText)}
+                        className="outline-none cursor-text"
+                      >{edu.ville}</span></span>
+                    )}
+                  </div>
+                  {renderFormattedDescription(edu.description, (val) => updateEduItem(eduIdx, 'description', val))}
                 </div>
               );
             })}
@@ -385,13 +601,20 @@ export const SectionSlot: React.FC<SectionSlotProps> = ({
           <div>
             {effectiveSkillsMode === 'grid' && (
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {(section.contenu as CompetenceItem[])?.map((sk) => (
+                {(section.contenu as CompetenceItem[])?.map((sk, idx) => (
                   <div
-                    key={sk.id}
+                    key={sk.id || idx}
                     className="p-1.5 rounded text-center font-bold border transition-all"
                     style={{ backgroundColor: secondaryAccentColor + '33', borderColor: accentColor + '44' }}
                   >
-                    <span>{sk.nom}</span>
+                    <span
+                      contentEditable={Boolean(onUpdateSection)}
+                      suppressContentEditableWarning
+                      onBlur={(e) => updateSkillItem(idx, 'nom', e.currentTarget.innerText)}
+                      className="outline-none cursor-text"
+                    >
+                      {sk.nom}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -399,13 +622,20 @@ export const SectionSlot: React.FC<SectionSlotProps> = ({
 
             {effectiveSkillsMode === 'badges' && (
               <div className="flex flex-wrap gap-1.5">
-                {(section.contenu as CompetenceItem[])?.map((sk) => (
+                {(section.contenu as CompetenceItem[])?.map((sk, idx) => (
                   <span
-                    key={sk.id}
+                    key={sk.id || idx}
                     className="px-2.5 py-1 rounded-full font-bold shadow-2xs"
                     style={{ backgroundColor: accentColor, color: '#FFFFFF' }}
                   >
-                    {sk.nom}
+                    <span
+                      contentEditable={Boolean(onUpdateSection)}
+                      suppressContentEditableWarning
+                      onBlur={(e) => updateSkillItem(idx, 'nom', e.currentTarget.innerText)}
+                      className="outline-none cursor-text"
+                    >
+                      {sk.nom}
+                    </span>
                   </span>
                 ))}
               </div>
@@ -413,13 +643,20 @@ export const SectionSlot: React.FC<SectionSlotProps> = ({
 
             {effectiveSkillsMode === 'tags' && (
               <div className="flex flex-wrap gap-1.5">
-                {(section.contenu as CompetenceItem[])?.map((sk) => (
+                {(section.contenu as CompetenceItem[])?.map((sk, idx) => (
                   <span
-                    key={sk.id}
+                    key={sk.id || idx}
                     className="px-2 py-0.5 rounded-lg font-extrabold border"
                     style={{ backgroundColor: secondaryAccentColor + '55', color: textColor, borderColor: accentColor + '55' }}
                   >
-                    #{sk.nom}
+                    #<span
+                      contentEditable={Boolean(onUpdateSection)}
+                      suppressContentEditableWarning
+                      onBlur={(e) => updateSkillItem(idx, 'nom', e.currentTarget.innerText)}
+                      className="outline-none cursor-text"
+                    >
+                      {sk.nom}
+                    </span>
                   </span>
                 ))}
               </div>
@@ -427,11 +664,18 @@ export const SectionSlot: React.FC<SectionSlotProps> = ({
 
             {effectiveSkillsMode === 'stars' && (
               <div className="space-y-1.5">
-                {(section.contenu as CompetenceItem[])?.map((sk) => {
+                {(section.contenu as CompetenceItem[])?.map((sk, idx) => {
                   const level = sk.niveau || 3;
                   return (
-                    <div key={sk.id} className="flex items-center justify-between gap-2">
-                      <span className="font-bold">{sk.nom}</span>
+                    <div key={sk.id || idx} className="flex items-center justify-between gap-2">
+                      <span
+                        contentEditable={Boolean(onUpdateSection)}
+                        suppressContentEditableWarning
+                        onBlur={(e) => updateSkillItem(idx, 'nom', e.currentTarget.innerText)}
+                        className="font-bold outline-none cursor-text"
+                      >
+                        {sk.nom}
+                      </span>
                       <div className="flex items-center space-x-0.5" style={{ color: accentColor }}>
                         {[1, 2, 3, 4, 5].map((s) => (
                           <Star
@@ -448,12 +692,19 @@ export const SectionSlot: React.FC<SectionSlotProps> = ({
 
             {effectiveSkillsMode === 'progress' && (
               <div className="space-y-2">
-                {(section.contenu as CompetenceItem[])?.map((sk) => {
+                {(section.contenu as CompetenceItem[])?.map((sk, idx) => {
                   const levelPercent = Math.min(100, Math.max(20, (sk.niveau || 3) * 20));
                   return (
-                    <div key={sk.id} className="space-y-1">
+                    <div key={sk.id || idx} className="space-y-1">
                       <div className="flex justify-between font-bold">
-                        <span>{sk.nom}</span>
+                        <span
+                          contentEditable={Boolean(onUpdateSection)}
+                          suppressContentEditableWarning
+                          onBlur={(e) => updateSkillItem(idx, 'nom', e.currentTarget.innerText)}
+                          className="outline-none cursor-text"
+                        >
+                          {sk.nom}
+                        </span>
                         <span className="opacity-70">{levelPercent}%</span>
                       </div>
                       <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
@@ -472,11 +723,18 @@ export const SectionSlot: React.FC<SectionSlotProps> = ({
               <div className="flex flex-wrap gap-1.5">
                 {(section.contenu as CompetenceItem[])?.map((sk, idx) => (
                   <span
-                    key={sk.id}
+                    key={sk.id || idx}
                     className="px-2.5 py-1 rounded-md font-bold text-white shadow-2xs"
                     style={{ backgroundColor: idx % 2 === 0 ? accentColor : (secondaryAccentColor && secondaryAccentColor !== '#FFFFFF' ? secondaryAccentColor : '#1E293B') }}
                   >
-                    {sk.nom}
+                    <span
+                      contentEditable={Boolean(onUpdateSection)}
+                      suppressContentEditableWarning
+                      onBlur={(e) => updateSkillItem(idx, 'nom', e.currentTarget.innerText)}
+                      className="outline-none cursor-text"
+                    >
+                      {sk.nom}
+                    </span>
                   </span>
                 ))}
               </div>
@@ -484,13 +742,13 @@ export const SectionSlot: React.FC<SectionSlotProps> = ({
 
             {effectiveSkillsMode === 'circular-progress' && (
               <div className="grid grid-cols-2 gap-2">
-                {(section.contenu as CompetenceItem[])?.map((sk) => {
+                {(section.contenu as CompetenceItem[])?.map((sk, idx) => {
                   const levelPercent = Math.min(100, Math.max(20, (sk.niveau || 3) * 20));
                   const radius = 14;
                   const circumference = 2 * Math.PI * radius;
                   const strokeDashoffset = circumference - (levelPercent / 100) * circumference;
                   return (
-                    <div key={sk.id} className="flex items-center gap-2 p-1 bg-black/5 dark:bg-white/5 rounded-xl">
+                    <div key={sk.id || idx} className="flex items-center gap-2 p-1 bg-black/5 dark:bg-white/5 rounded-xl">
                       <div className="relative w-9 h-9 shrink-0 flex items-center justify-center">
                         <svg className="w-9 h-9 transform -rotate-90">
                           <circle cx="18" cy="18" r={radius} stroke="currentColor" strokeWidth="3" className="opacity-20" fill="transparent" />
@@ -505,7 +763,14 @@ export const SectionSlot: React.FC<SectionSlotProps> = ({
                         </svg>
                         <span className="absolute text-[0.75em] font-black">{levelPercent}%</span>
                       </div>
-                      <span className="font-bold text-[0.9em] leading-tight truncate">{sk.nom}</span>
+                      <span
+                        contentEditable={Boolean(onUpdateSection)}
+                        suppressContentEditableWarning
+                        onBlur={(e) => updateSkillItem(idx, 'nom', e.currentTarget.innerText)}
+                        className="font-bold text-[0.9em] leading-tight truncate outline-none cursor-text"
+                      >
+                        {sk.nom}
+                      </span>
                     </div>
                   );
                 })}
@@ -515,9 +780,16 @@ export const SectionSlot: React.FC<SectionSlotProps> = ({
             {effectiveSkillsMode === 'list' && (
               <div className="space-y-1 opacity-90">
                 {(section.contenu as CompetenceItem[])?.map((sk, idx) => (
-                  <div key={sk.id} className="font-semibold flex items-center gap-1.5">
+                  <div key={sk.id || idx} className="font-semibold flex items-center gap-1.5">
                     <span style={{ color: accentColor }}>{getBulletPrefix(idx)}</span>
-                    <span>{sk.nom}</span>
+                    <span
+                      contentEditable={Boolean(onUpdateSection)}
+                      suppressContentEditableWarning
+                      onBlur={(e) => updateSkillItem(idx, 'nom', e.currentTarget.innerText)}
+                      className="outline-none cursor-text"
+                    >
+                      {sk.nom}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -528,10 +800,24 @@ export const SectionSlot: React.FC<SectionSlotProps> = ({
         {/* LANGUES */}
         {section.type === 'langues' && (
           <div className="space-y-1.5">
-            {(section.contenu as LangueItem[])?.map((l) => (
-              <div key={l.id} className="flex justify-between items-center border-b border-slate-100/40 pb-1 last:border-0">
-                <span className="font-extrabold">{l.langue}</span>
-                <span className="italic opacity-80">{l.niveau}</span>
+            {(section.contenu as LangueItem[])?.map((l, idx) => (
+              <div key={l.id || idx} className="flex justify-between items-center border-b border-slate-100/40 pb-1 last:border-0">
+                <span
+                  contentEditable={Boolean(onUpdateSection)}
+                  suppressContentEditableWarning
+                  onBlur={(e) => updateLangueItem(idx, 'langue', e.currentTarget.innerText)}
+                  className="font-extrabold outline-none cursor-text"
+                >
+                  {l.langue}
+                </span>
+                <span
+                  contentEditable={Boolean(onUpdateSection)}
+                  suppressContentEditableWarning
+                  onBlur={(e) => updateLangueItem(idx, 'niveau', e.currentTarget.innerText)}
+                  className="italic opacity-80 outline-none cursor-text"
+                >
+                  {l.niveau}
+                </span>
               </div>
             ))}
           </div>
@@ -539,7 +825,12 @@ export const SectionSlot: React.FC<SectionSlotProps> = ({
 
         {/* PERSONNALISÉE / LOISIRS */}
         {section.type === 'personnalisee' && (
-          <div className="whitespace-pre-line opacity-90">
+          <div
+            contentEditable={Boolean(onUpdateSection)}
+            suppressContentEditableWarning
+            onBlur={(e) => onUpdateSection?.({ ...section, contenu: { ...(section.contenu || {}), texteLibre: e.currentTarget.innerText } })}
+            className="whitespace-pre-line opacity-90 outline-none cursor-text"
+          >
             {(section.contenu as PersonnaliseeContenu)?.texteLibre}
           </div>
         )}

@@ -8,9 +8,10 @@ interface TemplateCardProps {
   template: CVTemplate;
   langue: Language;
   onSelect: (template: CVTemplate) => void;
+  onPreviewModal: (template: CVTemplate) => void;
 }
 
-export const TemplateCard: React.FC<TemplateCardProps> = ({ template, langue, onSelect }) => {
+export const TemplateCard: React.FC<TemplateCardProps> = ({ template, langue, onSelect, onPreviewModal }) => {
   const description = template.description[langue] || template.description.fr;
   const preset = getPresetForTemplate(template.id, langue);
 
@@ -37,7 +38,7 @@ export const TemplateCard: React.FC<TemplateCardProps> = ({ template, langue, on
       {/* Thumbnail Container - Compact Scaled A4 Preview */}
       <div 
         className="relative h-64 sm:h-72 bg-slate-100 dark:bg-slate-950/90 border-b border-slate-200 dark:border-slate-800 overflow-hidden flex items-start justify-center cursor-pointer select-none"
-        onClick={() => onSelect(template)}
+        onClick={() => onPreviewModal(template)}
       >
         {/* Scaled A4 Page Container */}
         <div className="w-[800px] h-[1131px] origin-top transform scale-[0.24] sm:scale-[0.26] pointer-events-none select-none shadow-md mt-2 rounded-sm overflow-hidden">
@@ -52,17 +53,29 @@ export const TemplateCard: React.FC<TemplateCardProps> = ({ template, langue, on
           </div>
         )}
 
-        {/* Hover Overlay Button */}
-        <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-all duration-200 flex flex-col items-center justify-center p-4 z-20">
+        {/* Hover Overlay Buttons */}
+        <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-all duration-200 flex flex-col items-center justify-center p-4 z-20 space-y-2">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onPreviewModal(template);
+            }}
+            className="w-full bg-white/90 hover:bg-white text-slate-900 font-extrabold text-xs py-2 px-3 rounded-xl shadow-lg transition-all transform group-hover:scale-105 cursor-pointer flex items-center justify-center gap-1.5"
+          >
+            <Eye className="w-4 h-4 text-blue-600" />
+            <span>Aperçu Plein Écran</span>
+          </button>
+
           <button
             type="button"
             onClick={(e) => {
               e.stopPropagation();
               onSelect(template);
             }}
-            className="w-full bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-xs py-2.5 px-4 rounded-xl shadow-lg transition-all transform group-hover:scale-105 cursor-pointer flex items-center justify-center gap-2"
+            className="w-full bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-xs py-2 px-3 rounded-xl shadow-lg transition-all transform group-hover:scale-105 cursor-pointer flex items-center justify-center gap-1.5"
           >
-            <Eye className="w-4 h-4" />
+            <ArrowRight className="w-4 h-4" />
             <span>Utiliser ce modèle</span>
           </button>
         </div>

@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { CV, Language } from '../types';
 import { getTranslation } from '../i18n/translations';
-import { Plus, Search, Edit3, Copy, Trash2, Download, CreditCard, Clock, CheckCircle2, FileText, Upload, X, AlertTriangle } from 'lucide-react';
+import { Plus, Search, Edit3, Copy, Trash2, Download, CreditCard, Clock, CheckCircle2, FileText, Upload, X, AlertTriangle, FilePlus } from 'lucide-react';
 
 interface DashboardViewProps {
   cvs: CV[];
   langue: Language;
   onCreateNew: () => void;
+  onCreateBlankCV?: () => void;
   onImportClick: () => void;
   onEditCV: (cv: CV) => void;
   onDuplicateCV: (cvId: string) => void;
@@ -19,6 +20,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   cvs,
   langue,
   onCreateNew,
+  onCreateBlankCV,
   onImportClick,
   onEditCV,
   onDuplicateCV,
@@ -100,21 +102,32 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Gérez vos CVs, personnalisez-les et exportez vos fichiers PDF.</p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2.5">
           <button
             onClick={onImportClick}
-            className="px-4 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs rounded-xl transition-all flex items-center space-x-2 border border-slate-200 dark:border-slate-700 cursor-pointer"
+            className="px-3.5 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs rounded-xl transition-all flex items-center space-x-2 border border-slate-200 dark:border-slate-700 cursor-pointer"
           >
             <Upload className="w-4 h-4" />
             <span>{t('importCVBtn')}</span>
           </button>
 
+          {onCreateBlankCV && (
+            <button
+              onClick={onCreateBlankCV}
+              className="px-4 py-2.5 bg-slate-900 dark:bg-slate-800 hover:bg-slate-800 dark:hover:bg-slate-700 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center space-x-2 cursor-pointer border border-slate-800 dark:border-slate-700"
+              title="Créer directement un CV vierge sans modèle pre-rempli"
+            >
+              <FilePlus className="w-4 h-4 text-emerald-400" />
+              <span>Page Blanche</span>
+            </button>
+          )}
+
           <button
             onClick={onCreateNew}
-            className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-md shadow-blue-500/20 transition-all flex items-center space-x-2 cursor-pointer"
+            className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-md shadow-blue-500/20 transition-all flex items-center space-x-2 cursor-pointer"
           >
             <Plus className="w-4 h-4" />
-            <span>{t('createNewCV')}</span>
+            <span>Galerie de Modèles</span>
           </button>
         </div>
       </div>

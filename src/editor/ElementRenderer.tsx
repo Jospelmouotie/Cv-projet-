@@ -58,10 +58,11 @@ export const ElementRenderer: React.FC<ElementRendererProps> = ({
       case 'text':
         return (
           <div
-            contentEditable={isSelected}
+            contentEditable={true}
             suppressContentEditableWarning
             onBlur={(e) => onContentChange?.(e.currentTarget.innerText)}
-            className="outline-none min-h-[20px] w-full"
+            onInput={(e) => onContentChange?.(e.currentTarget.innerText)}
+            className="outline-none min-h-[20px] w-full cursor-text"
             style={styleObj}
           >
             {typeof content === 'string' ? content : content?.text || 'Texte personnalisable'}
@@ -146,9 +147,9 @@ export const ElementRenderer: React.FC<ElementRendererProps> = ({
 
             {listType === 'bullet' && (
               <ul className="list-disc list-inside space-y-1">
-                {items.map((item: any) => (
-                  <li key={item.id} className="text-xs">
-                    {item.text}
+                {items.map((item: any, idx: number) => (
+                  <li key={item?.id || idx} className="text-xs">
+                    {typeof item === 'string' ? item : item.text}
                   </li>
                 ))}
               </ul>
@@ -156,9 +157,9 @@ export const ElementRenderer: React.FC<ElementRendererProps> = ({
 
             {listType === 'numbered' && (
               <ol className="list-decimal list-inside space-y-1">
-                {items.map((item: any) => (
-                  <li key={item.id} className="text-xs">
-                    {item.text}
+                {items.map((item: any, idx: number) => (
+                  <li key={item?.id || idx} className="text-xs">
+                    {typeof item === 'string' ? item : item.text}
                   </li>
                 ))}
               </ol>
@@ -166,10 +167,10 @@ export const ElementRenderer: React.FC<ElementRendererProps> = ({
 
             {listType === 'checklist' && (
               <div className="space-y-1">
-                {items.map((item: any) => (
-                  <div key={item.id} className="flex items-center space-x-2 text-xs">
+                {items.map((item: any, idx: number) => (
+                  <div key={item?.id || idx} className="flex items-center space-x-2 text-xs">
                     <CheckCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                    <span>{item.text}</span>
+                    <span>{typeof item === 'string' ? item : item.text}</span>
                   </div>
                 ))}
               </div>
@@ -177,8 +178,8 @@ export const ElementRenderer: React.FC<ElementRendererProps> = ({
 
             {listType === 'skill-progress' && (
               <div className="space-y-2">
-                {items.map((item: any) => (
-                  <div key={item.id} className="space-y-0.5">
+                {items.map((item: any, idx: number) => (
+                  <div key={item?.id || idx} className="space-y-0.5">
                     <div className="flex justify-between text-xs font-semibold">
                       <span>{item.text}</span>
                       <span className="opacity-75">{item.value || 80}%</span>
@@ -257,6 +258,12 @@ export const ElementRenderer: React.FC<ElementRendererProps> = ({
               fontCss={style?.fontFamily || 'Inter'}
               dynamicTextStyle={{ fontSize: style?.fontSize ? `${style.fontSize}pt` : '10pt' }}
               isReorderActive={false}
+              onUpdateSection={(updatedSec) => {
+                onContentChange?.({
+                  ...content,
+                  section: updatedSec
+                });
+              }}
             />
           );
         }
@@ -410,7 +417,7 @@ export const ElementRenderer: React.FC<ElementRendererProps> = ({
   return (
     <div
       onClick={onSelect}
-      className={`relative w-full h-full cursor-pointer select-none transition-all ${
+      className={`relative w-full h-full cursor-pointer transition-all ${
         isSelected ? 'ring-2 ring-blue-500 ring-offset-1 z-50' : 'hover:outline-1 hover:outline-dashed hover:outline-blue-300'
       }`}
     >

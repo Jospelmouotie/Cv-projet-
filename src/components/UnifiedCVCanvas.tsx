@@ -351,7 +351,7 @@ export const UnifiedCVCanvas: React.FC<UnifiedCVCanvasProps> = ({
   const showPhoto = cv.afficherPhoto !== false && Boolean(cv.photoUrl);
   const photoShape = cv.photoForme || templateTheme.photoFrameStyle || 'ronde';
   const photoSize = cv.photoTaille ?? (isStrict1Page ? 64 : 96);
-  const photoPos = templateTheme.photoPosition || (headerStyle === 'sidebar-top' ? 'in-sidebar' : 'in-header');
+  const photoPos = cv.photoPosition || templateTheme.photoPosition || (headerStyle === 'sidebar-top' ? 'in-sidebar' : 'in-header');
   const showHeaderPhoto = showPhoto && photoPos === 'in-header';
   const showSidebarPhoto = showPhoto && photoPos === 'in-sidebar';
   const decorativeShape = templateTheme.decorativeShapes || 'none';
@@ -362,6 +362,15 @@ export const UnifiedCVCanvas: React.FC<UnifiedCVCanvasProps> = ({
   if (photoShape === 'arche') photoShapeClass = 'rounded-t-full rounded-b-lg';
   if (photoShape === 'hexagone') photoShapeClass = 'rounded-xl border-2';
   if (photoShape === 'galet') photoShapeClass = 'rounded-[2rem] aspect-[3/4] object-cover';
+
+  const customPhotoStyle: React.CSSProperties = {
+    width: `${photoSize}px`,
+    height: photoShape === 'galet' ? `${photoSize * 1.3}px` : `${photoSize}px`,
+    borderColor: cv.photoBordureCouleur || '#FFFFFF',
+    borderWidth: cv.photoBordureEpaisseur !== undefined ? `${cv.photoBordureEpaisseur}px` : '2px',
+    borderStyle: 'solid',
+    borderRadius: cv.photoRayon !== undefined ? `${cv.photoRayon}px` : undefined
+  };
 
   // Render Top Header
   const renderTopHeader = () => {

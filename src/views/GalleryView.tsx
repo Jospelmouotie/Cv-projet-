@@ -2,19 +2,24 @@ import React, { useState } from 'react';
 import { CVTemplate, Language, TemplateCategory } from '../types';
 import { CV_TEMPLATES } from '../data/templates';
 import { TemplateCard } from '../components/TemplateCard';
+import { TemplatePreviewModal } from '../components/TemplatePreviewModal';
+import { TemplateModeModal } from '../components/TemplateModeModal';
 import { getTranslation } from '../i18n/translations';
-import { Search, Sparkles } from 'lucide-react';
+import { Search, Sparkles, FilePlus } from 'lucide-react';
 
 interface GalleryViewProps {
   langue: Language;
-  onSelectTemplate: (template: CVTemplate) => void;
+  onSelectTemplate: (template: CVTemplate, mode?: 'visual' | 'form') => void;
+  onCreateBlankCV?: () => void;
 }
 
-export const GalleryView: React.FC<GalleryViewProps> = ({ langue, onSelectTemplate }) => {
+export const GalleryView: React.FC<GalleryViewProps> = ({ langue, onSelectTemplate, onCreateBlankCV }) => {
   const t = (key: Parameters<typeof getTranslation>[1]) => getTranslation(langue, key);
 
   const [selectedCategory, setSelectedCategory] = useState<TemplateCategory | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [previewTemplate, setPreviewTemplate] = useState<CVTemplate | null>(null);
+  const [modeModalTemplate, setModeModalTemplate] = useState<CVTemplate | null>(null);
 
   const categories: Array<{ id: TemplateCategory | 'all'; label: string }> = [
     { id: 'all', label: t('catAll') },
@@ -34,22 +39,38 @@ export const GalleryView: React.FC<GalleryViewProps> = ({ langue, onSelectTempla
     return matchesCategory && matchesSearch;
   });
 
+  const handleTemplatePicked = (template: CVTemplate) => {
+    setModeModalTemplate(template);
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
       
       {/* Gallery Banner Header */}
-      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-6 sm:p-8 rounded-3xl shadow-lg border border-slate-800 space-y-3 relative overflow-hidden">
-        <div className="absolute -right-10 -bottom-10 w-60 h-60 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
-        
-        <div className="inline-flex items-center gap-2 bg-blue-500/20 text-blue-300 px-3 py-1 rounded-full text-xs font-bold border border-blue-400/30">
-          <Sparkles className="w-3.5 h-3.5" />
-          <span>Catalogue de Modèles HD</span>
+      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-6 sm:p-8 rounded-3xl shadow-lg border border-slate-800 space-y-4 relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="space-y-3 max-w-2xl">
+          <div className="inline-flex items-center gap-2 bg-blue-500/20 text-blue-300 px-3 py-1 rounded-full text-xs font-bold border border-blue-400/30">
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>Catalogue de Modèles HD</span>
+          </div>
+          
+          <h1 className="text-2xl sm:text-3xl font-black tracking-tight">Choisissez votre modèle de CV d'exception</h1>
+          <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+            Chaque modèle est optimisé pour le passage ATS (système de recrutement), entièrement personnalisable avec aperçu en temps réel.
+          </p>
         </div>
-        
-        <h1 className="text-2xl sm:text-3xl font-black tracking-tight">Choisissez votre modèle de CV d'exception</h1>
-        <p className="text-xs sm:text-sm text-slate-300 max-w-2xl leading-relaxed">
-          Chaque modèle est optimisé pour le passage ATS (système de recrutement), entièrement personnalisable avec aperçu en temps réel.
-        </p>
+
+        {onCreateBlankCV && (
+          <div className="shrink-0">
+            <button
+              onClick={onCreateBlankCV}
+              className="px-5 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs rounded-2xl shadow-xl transition-all flex items-center space-x-2 border border-emerald-400/30 cursor-pointer"
+            >
+              <FilePlus className="w-4 h-4" />
+              <span>Créer sur Page Blanche</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Category Filter Pills & Search */}
@@ -94,10 +115,36 @@ export const GalleryView: React.FC<GalleryViewProps> = ({ langue, onSelectTempla
             key={tpl.id}
             template={tpl}
             langue={langue}
-            onSelect={onSelectTemplate}
+            onSelect={handleTemplatePicked}
+            onPreviewModal={setPreviewTemplate}
           />
         ))}
       </div>
+
+      {/* Full Screen Template Preview Modal */}
+      {previewTemplate && (
+        <TemplatePreviewModal
+          template={previewTemplate}
+          langue={langue}
+          isOpen={!!previewTemplate}
+          onClose={() => setPreviewTemplate(null)}
+          onSelect={handleTemplatePicked}
+        />
+      )}
+
+      {/* Mode Choice Modal (Visual Editor vs Form) */}
+      {modeModalTemplate && (
+        <TemplateModeModal
+          template={modeModalTemplate}
+          langue={langue}
+          isOpen={!!modeModalTemplate}
+          onClose={() => setModeModalTemplate(null)}
+          onConfirm={(template, mode) => {
+            onSelectTemplate(template, mode);
+            setModeModalTemplate(null);
+          }}
+        />
+      )}
 
     </div>
   );

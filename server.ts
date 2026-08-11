@@ -41,7 +41,7 @@ async function extractTextFromPDF(buffer: Buffer): Promise<string> {
 }
 import mammoth from 'mammoth';
 import { createServer as createViteServer } from 'vite';
-import { TEMPLATE_PRESETS, getPresetForTemplate } from './src/data/templatePresets';
+import { TEMPLATE_PRESETS, getPresetForTemplate, getCleanPresetForTemplate } from './src/data/templatePresets';
 
 const app = express();
 const PORT = 3000;
@@ -93,8 +93,8 @@ function loadDB(): DB {
       // Guarantee photoUrl and photo settings on CVs
       if (parsedDB.cvs) {
         parsedDB.cvs.forEach(c => {
-          if (!c.photoUrl) {
-            c.photoUrl = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80';
+          if (c.photoUrl === undefined) {
+            c.photoUrl = '';
           }
           if (c.afficherPhoto === undefined) {
             c.afficherPhoto = true;
@@ -397,25 +397,31 @@ app.get('/api/cv', (req, res) => {
 });
 
 app.post('/api/cv', (req, res) => {
-  const { utilisateurId, titre, templateId, langue, couleurAccent, police, sections } = req.body;
+  const { utilisateurId, titre, templateId, langue, couleurAccent, police, sections, photoUrl, isPrefilled } = req.body;
   const db = loadDB();
 
-  const preset = getPresetForTemplate(templateId || 'moderne-1', langue || 'fr');
-  const defaultSections = sections || preset.sections;
+  const selectedTemplateId = templateId || 'moderne-1';
+  const selectedLangue = langue || 'fr';
+
+  const cleanPreset = getCleanPresetForTemplate(selectedTemplateId, selectedLangue);
+  const samplePreset = getPresetForTemplate(selectedTemplateId, selectedLangue);
+
+  const activePreset = isPrefilled ? samplePreset : cleanPreset;
+  const defaultSections = sections || activePreset.sections;
 
   const newCV = {
     id: `cv-${Date.now()}`,
     utilisateurId: utilisateurId || 'u-demo-1',
-    titre: titre || preset.titre || 'Nouveau CV',
-    templateId: templateId || 'moderne-1',
-    langue: langue || 'fr',
-    couleurAccent: couleurAccent || preset.couleurAccent || '#2563EB',
-    police: police || preset.police || 'Inter',
+    titre: titre || activePreset.titre || 'Nouveau CV',
+    templateId: selectedTemplateId,
+    langue: selectedLangue,
+    couleurAccent: couleurAccent || activePreset.couleurAccent || '#2563EB',
+    police: police || activePreset.police || 'Inter',
     taillePolice: 'md',
     hauteurLigne: 'normal',
     ecartementTexte: 'normal',
     margeSection: 'normal',
-    photoUrl: preset.photoUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
+    photoUrl: photoUrl !== undefined ? photoUrl : (isPrefilled ? samplePreset.photoUrl : ''),
     afficherPhoto: true,
     titrePrincipalEnGrand: 'NOM',
     statutPaiement: 'NON_PAYE',

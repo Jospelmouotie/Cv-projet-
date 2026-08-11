@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   Undo2,
   Redo2,
@@ -44,7 +44,8 @@ import {
   ArrowUp,
   ArrowDown,
   Layers2,
-  Scissors
+  Scissors,
+  Upload
 } from 'lucide-react';
 import { CVElement, ElementType, ShapeType, ListType } from '../types/document';
 
@@ -133,11 +134,94 @@ export const WordRibbonToolbar: React.FC<WordRibbonToolbarProps> = ({
   onApplyFontFamily
 }) => {
   const [activeTab, setActiveTab] = useState<RibbonTab>('accueil');
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const selectedElement = selectedElements[0] || null;
   const currentStyle = selectedElement?.style || {};
 
+  const handlePhotoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const dataUrl = event.target?.result as string;
+      if (selectedElement) {
+        if (selectedElement.type === 'image') {
+          selectedElement.content = { ...(selectedElement.content || {}), src: dataUrl };
+        } else {
+          selectedElement.content = { ...(selectedElement.content || {}), photoUrl: dataUrl, showPhoto: true };
+        }
+      } else {
+        onAddElement('image', { src: dataUrl, alt: 'Photo de profil' }, { width: 120, height: 120, borderRadius: 9999 });
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleToggleBold = () => {
+    if (typeof window !== 'undefined') {
+      try {
+        document.execCommand('bold', false);
+      } catch (_) {}
+    }
+    onUpdateStyle({
+      fontWeight: currentStyle.fontWeight === 'bold' ? 'normal' : 'bold'
+    });
+  };
+
+  const handleToggleItalic = () => {
+    if (typeof window !== 'undefined') {
+      try {
+        document.execCommand('italic', false);
+      } catch (_) {}
+    }
+    onUpdateStyle({
+      fontStyle: currentStyle.fontStyle === 'italic' ? 'normal' : 'italic'
+    });
+  };
+
+  const handleToggleUnderline = () => {
+    if (typeof window !== 'undefined') {
+      try {
+        document.execCommand('underline', false);
+      } catch (_) {}
+    }
+    onUpdateStyle({
+      textDecoration: currentStyle.textDecoration === 'underline' ? 'none' : 'underline'
+    });
+  };
+
+  const handleApplyListFormatting = (listType: ListType) => {
+    if (typeof window !== 'undefined') {
+      try {
+        if (listType === 'bullet') {
+          document.execCommand('insertUnorderedList', false);
+        } else if (listType === 'numbered') {
+          document.execCommand('insertOrderedList', false);
+        }
+      } catch (_) {}
+    }
+    if (selectedElement) {
+      if (selectedElement.type === 'list') {
+        selectedElement.content = { ...(selectedElement.content || {}), type: listType };
+      } else {
+        onUpdateStyle({ listType });
+      }
+    } else {
+      onAddList(listType);
+    }
+  };
+
   return (
     <div className="w-full bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 shadow-xs z-30 select-none flex flex-col">
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handlePhotoFileChange}
+        accept="image/*"
+        className="hidden"
+      />
+
       {/* Top Header Bar with Mode Switcher & Quick Export */}
       <div className="px-3 py-1.5 bg-slate-800 dark:bg-slate-950 text-white flex items-center justify-between text-xs">
         <div className="flex items-center space-x-2">
@@ -243,7 +327,7 @@ export const WordRibbonToolbar: React.FC<WordRibbonToolbarProps> = ({
           }`}
         >
           <Layout className="w-3.5 h-3.5 text-indigo-500" />
-          <span>Disposition & Alignement</span>
+          <span>Disposition & Colonnes</span>
         </button>
 
         <button
@@ -350,11 +434,7 @@ export const WordRibbonToolbar: React.FC<WordRibbonToolbarProps> = ({
 
                 <div className="flex items-center space-x-1">
                   <button
-                    onClick={() =>
-                      onUpdateStyle({
-                        fontWeight: currentStyle.fontWeight === 'bold' ? 'normal' : 'bold'
-                      })
-                    }
+                    onClick={handleToggleBold}
                     className={`p-1 rounded-md text-xs font-bold transition-colors cursor-pointer ${
                       currentStyle.fontWeight === 'bold'
                         ? 'bg-blue-600 text-white'
@@ -366,11 +446,7 @@ export const WordRibbonToolbar: React.FC<WordRibbonToolbarProps> = ({
                   </button>
 
                   <button
-                    onClick={() =>
-                      onUpdateStyle({
-                        fontStyle: currentStyle.fontStyle === 'italic' ? 'normal' : 'italic'
-                      })
-                    }
+                    onClick={handleToggleItalic}
                     className={`p-1 rounded-md text-xs transition-colors cursor-pointer ${
                       currentStyle.fontStyle === 'italic'
                         ? 'bg-blue-600 text-white'
@@ -382,11 +458,7 @@ export const WordRibbonToolbar: React.FC<WordRibbonToolbarProps> = ({
                   </button>
 
                   <button
-                    onClick={() =>
-                      onUpdateStyle({
-                        textDecoration: currentStyle.textDecoration === 'underline' ? 'none' : 'underline'
-                      })
-                    }
+                    onClick={handleToggleUnderline}
                     className={`p-1 rounded-md text-xs transition-colors cursor-pointer ${
                       currentStyle.textDecoration === 'underline'
                         ? 'bg-blue-600 text-white'
@@ -395,6 +467,23 @@ export const WordRibbonToolbar: React.FC<WordRibbonToolbarProps> = ({
                     title="Souligné"
                   >
                     <Underline className="w-3.5 h-3.5" />
+                  </button>
+
+                  {/* Bullet Lists */}
+                  <button
+                    onClick={() => handleApplyListFormatting('bullet')}
+                    className="p-1 rounded-md text-xs hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 cursor-pointer"
+                    title="Appliquer la Puce"
+                  >
+                    <List className="w-3.5 h-3.5 text-blue-600" />
+                  </button>
+
+                  <button
+                    onClick={() => handleApplyListFormatting('numbered')}
+                    className="p-1 rounded-md text-xs hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 cursor-pointer"
+                    title="Appliquer la Numérotation"
+                  >
+                    <ListOrdered className="w-3.5 h-3.5 text-blue-600" />
                   </button>
 
                   <div className="h-4 w-px bg-slate-200 dark:bg-slate-800 mx-1" />
@@ -455,6 +544,18 @@ export const WordRibbonToolbar: React.FC<WordRibbonToolbarProps> = ({
               </div>
             </div>
 
+            {/* Importer Photo button in Accueil */}
+            <div className="flex items-center space-x-1 px-3">
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="p-1.5 rounded-lg text-blue-600 hover:bg-blue-50 dark:hover:bg-slate-800 cursor-pointer flex flex-col items-center"
+                title="Importer une photo depuis l'ordinateur"
+              >
+                <Upload className="w-4 h-4 text-blue-600" />
+                <span className="text-[10px] font-bold">Photo</span>
+              </button>
+            </div>
+
             {/* Lock / Unlock */}
             <div className="flex items-center space-x-1 px-3">
               <button
@@ -473,8 +574,19 @@ export const WordRibbonToolbar: React.FC<WordRibbonToolbarProps> = ({
         {/* TAB 2: INSERTION */}
         {activeTab === 'insertion' && (
           <div className="flex items-center space-x-3 divide-x divide-slate-200 dark:divide-slate-800">
-            {/* Texte & Titres */}
+            {/* Photo Import */}
             <div className="flex items-center space-x-1 pr-3">
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="p-1.5 rounded-lg text-blue-600 hover:bg-blue-50 dark:hover:bg-slate-800 cursor-pointer flex flex-col items-center min-w-[60px]"
+              >
+                <ImageIcon className="w-4 h-4 text-blue-600" />
+                <span className="text-[10px] font-bold">Importer Photo</span>
+              </button>
+            </div>
+
+            {/* Texte & Titres */}
+            <div className="flex items-center space-x-1 px-3">
               <button
                 onClick={() => onAddElement('text', { text: 'Nouveau paragraphe' })}
                 className="p-1.5 rounded-lg text-slate-800 dark:text-slate-200 hover:bg-blue-50 dark:hover:bg-slate-800 cursor-pointer flex flex-col items-center min-w-[50px]"
@@ -691,8 +803,36 @@ export const WordRibbonToolbar: React.FC<WordRibbonToolbarProps> = ({
         {/* TAB 4: DISPOSITION & ALIGNEMENT */}
         {activeTab === 'disposition' && (
           <div className="flex items-center space-x-3 divide-x divide-slate-200 dark:divide-slate-800">
-            {/* Object Layering Z-Index */}
+            {/* Columns Preset Addition */}
             <div className="flex items-center space-x-1 pr-3">
+              <button
+                onClick={() => onAddTwoColumnSection(30, 70)}
+                className="p-1.5 rounded-lg text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer flex flex-col items-center"
+                title="Séparer le CV en 2 Colonnes 30% / 70%"
+              >
+                <Columns className="w-4 h-4 text-blue-600" />
+                <span className="text-[10px]">2 Col 30/70</span>
+              </button>
+              <button
+                onClick={() => onAddTwoColumnSection(40, 60)}
+                className="p-1.5 rounded-lg text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer flex flex-col items-center"
+                title="Séparer le CV en 2 Colonnes 40% / 60%"
+              >
+                <Columns className="w-4 h-4 text-indigo-600" />
+                <span className="text-[10px]">2 Col 40/60</span>
+              </button>
+              <button
+                onClick={() => onAddTwoColumnSection(50, 50)}
+                className="p-1.5 rounded-lg text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer flex flex-col items-center"
+                title="Séparer le CV en 2 Colonnes 50% / 50%"
+              >
+                <Columns className="w-4 h-4 text-purple-600" />
+                <span className="text-[10px]">2 Col 50/50</span>
+              </button>
+            </div>
+
+            {/* Object Layering Z-Index */}
+            <div className="flex items-center space-x-1 px-3">
               <button
                 onClick={onBringToFront}
                 disabled={!selectedElement}
@@ -828,3 +968,4 @@ export const WordRibbonToolbar: React.FC<WordRibbonToolbarProps> = ({
     </div>
   );
 };
+
