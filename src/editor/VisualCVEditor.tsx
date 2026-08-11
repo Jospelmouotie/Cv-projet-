@@ -9,8 +9,9 @@ import { Canvas } from './Canvas';
 import { PropertiesPanel } from './PropertiesPanel';
 import { AIAssistantModal } from './AIAssistantModal';
 import { ATSAnalyzerModal } from './ATSAnalyzerModal';
+import { HeaderProfileModal } from './HeaderProfileModal';
 import { exportCVToPDF } from '../utils/pdfExport';
-import { PlusCircle, Sliders, Sparkles, FileSpreadsheet, X } from 'lucide-react';
+import { PlusCircle, Sliders, Sparkles, FileSpreadsheet, X, User } from 'lucide-react';
 
 interface VisualCVEditorProps {
   cv: CV;
@@ -48,12 +49,14 @@ export const VisualCVEditor: React.FC<VisualCVEditorProps> = ({
     return 0.85;
   });
   const [gridSnap, setGridSnap] = useState<boolean>(true);
+  const [rulerVisible, setRulerVisible] = useState<boolean>(true);
 
   // Mobile Bottom Sheet drawer state
   const [mobileDrawer, setMobileDrawer] = useState<'elements' | 'properties' | null>(null);
 
   const [showAIModal, setShowAIModal] = useState(false);
   const [showATSModal, setShowATSModal] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
 
   // Keep activePageId valid if pages change
   useEffect(() => {
@@ -386,6 +389,8 @@ export const VisualCVEditor: React.FC<VisualCVEditorProps> = ({
         onZoomChange={setZoomLevel}
         gridSnap={gridSnap}
         onToggleGridSnap={() => setGridSnap(!gridSnap)}
+        rulerVisible={rulerVisible}
+        onToggleRuler={() => setRulerVisible(!rulerVisible)}
         onAddElement={handleAddElement}
         onAddShape={handleAddShape}
         onAddList={handleAddList}
@@ -399,12 +404,19 @@ export const VisualCVEditor: React.FC<VisualCVEditorProps> = ({
         onAlignSelected={handleAlignElement}
         onOpenAIAssistant={() => setShowAIModal(true)}
         onOpenATSAnalyzer={() => setShowATSModal(true)}
+        onOpenProfileEditor={() => setShowProfileModal(true)}
         onSaveCV={() => onSaveCV(convertDocumentToLegacyCV(document))}
         onExportPDF={() => exportCVToPDF('cv-preview-container', `${cv.titreCV || cv.titre || 'CV'}.pdf`)}
         onToggleViewMode={onToggleViewMode}
         viewMode={viewMode}
         onApplyThemeColor={handleApplyThemeColor}
         onApplyFontFamily={handleApplyFontFamily}
+        onApplyPageBackground={handleApplyPageBackground}
+        cv={cv}
+        onUpdateCV={(cvPatch) => {
+          const updated = { ...cv, ...cvPatch };
+          onSaveCV(updated);
+        }}
       />
 
       {/* Main Workspace Body */}
@@ -553,6 +565,18 @@ export const VisualCVEditor: React.FC<VisualCVEditorProps> = ({
         <ATSAnalyzerModal
           document={document}
           onClose={() => setShowATSModal(false)}
+        />
+      )}
+
+      {showProfileModal && (
+        <HeaderProfileModal
+          isOpen={showProfileModal}
+          onClose={() => setShowProfileModal(false)}
+          cv={cv}
+          onUpdateCV={(updatedPatch) => {
+            const updated = { ...cv, ...updatedPatch };
+            onSaveCV(updated);
+          }}
         />
       )}
 

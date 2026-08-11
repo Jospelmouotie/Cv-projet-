@@ -816,6 +816,21 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
         </div>
       </div>
 
+      {/* Opacity Control */}
+      <div className="space-y-1.5 pt-1">
+        <div className="flex items-center justify-between text-[11px] font-bold text-slate-500 dark:text-slate-400">
+          <span>Opacité ({Math.round((style?.opacity ?? 1) * 100)}%)</span>
+        </div>
+        <input
+          type="range"
+          min={10}
+          max={100}
+          value={Math.round((style?.opacity ?? 1) * 100)}
+          onChange={(e) => updateStyle('opacity', parseInt(e.target.value, 10) / 100)}
+          className="w-full accent-blue-600 cursor-pointer"
+        />
+      </div>
+
       {/* Layering & Depth */}
       <div className="space-y-2 pt-2 border-t border-slate-200 dark:border-slate-800">
         <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1">

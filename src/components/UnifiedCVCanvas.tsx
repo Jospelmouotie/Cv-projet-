@@ -532,7 +532,7 @@ export const UnifiedCVCanvas: React.FC<UnifiedCVCanvasProps> = ({
         <div
           id={id}
           ref={cvInnerRef}
-          className="bg-white text-slate-900 w-full min-h-[297mm] h-auto shadow-2xl rounded-none sm:rounded-lg border border-slate-300 relative select-none flex flex-col overflow-hidden transition-all duration-200"
+          className="bg-white text-slate-900 w-full min-h-[1123px] h-auto shadow-2xl rounded-none sm:rounded-lg border border-slate-300 relative select-none flex flex-col overflow-hidden transition-all duration-200"
           style={{
             fontFamily: fontCss,
             backgroundColor: mainBgColor,
@@ -540,7 +540,7 @@ export const UnifiedCVCanvas: React.FC<UnifiedCVCanvasProps> = ({
             padding: `${pagePaddingPx}px`,
             transform: scaleFactor < 1 ? `scale(${scaleFactor})` : undefined,
             transformOrigin: 'top center',
-            maxHeight: scaleFactor < 1 ? `${isStrict1Page ? 1122 : 2244}px` : undefined
+            maxHeight: scaleFactor < 1 ? `${isStrict1Page ? 1123 : 2246}px` : undefined
           }}
         >
           {watermarkContent}
@@ -563,7 +563,7 @@ export const UnifiedCVCanvas: React.FC<UnifiedCVCanvasProps> = ({
           </div>
 
           {/* CANVAS BODY: 1 OR 2 COLUMNS WITH DROPPABLE ZONES */}
-          <div className="flex-1 flex flex-col w-full min-h-0">
+          <div className="flex-1 flex flex-col w-full min-h-0 h-full">
             {!isTwoColumn ? (
               /* SINGLE COLUMN LAYOUT */
               <div className="flex-1 px-2.5 py-1.5 sm:px-3 sm:py-2">
@@ -591,7 +591,7 @@ export const UnifiedCVCanvas: React.FC<UnifiedCVCanvasProps> = ({
               </div>
             ) : (
               /* TWO COLUMN LAYOUT */
-              <div className={`flex-1 flex flex-row w-full min-h-0 ${sidebarPosition === 'droite' ? 'flex-row-reverse' : ''}`}>
+              <div className={`flex-1 flex flex-row w-full min-h-0 h-full ${sidebarPosition === 'droite' ? 'flex-row-reverse' : ''}`}>
                 {/* COLUMN 1: SIDEBAR / LATÉRAL */}
                 <div
                   className="px-2 py-1.5 sm:px-2.5 sm:py-2 shrink-0 transition-all border-r border-slate-200/80"

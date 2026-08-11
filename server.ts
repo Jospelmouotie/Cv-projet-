@@ -397,7 +397,7 @@ app.get('/api/cv', (req, res) => {
 });
 
 app.post('/api/cv', (req, res) => {
-  const { utilisateurId, titre, templateId, langue, couleurAccent, police, sections, photoUrl, isPrefilled } = req.body;
+  const { utilisateurId, titre, templateId, langue, couleurAccent, police, sections, photoUrl, isPrefilled, isBlank } = req.body;
   const db = loadDB();
 
   const selectedTemplateId = templateId || 'moderne-1';
@@ -406,7 +406,8 @@ app.post('/api/cv', (req, res) => {
   const cleanPreset = getCleanPresetForTemplate(selectedTemplateId, selectedLangue);
   const samplePreset = getPresetForTemplate(selectedTemplateId, selectedLangue);
 
-  const activePreset = isPrefilled ? samplePreset : cleanPreset;
+  const prefilledBool = isPrefilled !== undefined ? Boolean(isPrefilled) : (isBlank !== undefined ? !isBlank : true);
+  const activePreset = prefilledBool ? samplePreset : cleanPreset;
   const defaultSections = sections || activePreset.sections;
 
   const newCV = {
@@ -421,7 +422,7 @@ app.post('/api/cv', (req, res) => {
     hauteurLigne: 'normal',
     ecartementTexte: 'normal',
     margeSection: 'normal',
-    photoUrl: photoUrl !== undefined ? photoUrl : (isPrefilled ? samplePreset.photoUrl : ''),
+    photoUrl: photoUrl !== undefined ? photoUrl : (prefilledBool ? samplePreset.photoUrl : ''),
     afficherPhoto: true,
     titrePrincipalEnGrand: 'NOM',
     statutPaiement: 'NON_PAYE',
