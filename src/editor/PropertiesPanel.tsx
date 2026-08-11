@@ -278,7 +278,131 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
           </div>
         )}
 
-        {/* 2. IMAGE ELEMENT / PHOTO */}
+        {/* 2. LIST ELEMENT CONTROLS */}
+        {type === 'list' && (
+          <div className="space-y-3 text-xs">
+            <div>
+              <span className="text-[10px] text-slate-500 font-medium block mb-1">Style des puces:</span>
+              <div className="grid grid-cols-4 gap-1">
+                {[
+                  { id: 'disc', label: '• Disque' },
+                  { id: 'square', label: '■ Carré' },
+                  { id: 'arrow', label: '➢ Flèche' },
+                  { id: 'check', label: '✓ Coche' },
+                  { id: 'star', label: '★ Étoile' },
+                  { id: 'dash', label: '- Tiret' },
+                  { id: 'numbered', label: '1. Nombres' }
+                ].map((b) => (
+                  <button
+                    key={b.id}
+                    type="button"
+                    onClick={() => updateContent({ bulletStyle: b.id, type: b.id === 'numbered' ? 'numbered' : 'bullet' })}
+                    className={`px-1.5 py-1 text-[10px] font-bold rounded border transition-all cursor-pointer ${
+                      (content?.bulletStyle || content?.type) === b.id
+                        ? 'bg-blue-600 text-white border-blue-600'
+                        : 'bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300'
+                    }`}
+                  >
+                    {b.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <span className="text-[10px] text-slate-500 font-medium block mb-1">Titre de la liste (optionnel):</span>
+              <input
+                type="text"
+                value={content?.title || ''}
+                onChange={(e) => updateContent({ title: e.target.value })}
+                placeholder="ex: Projets majeurs..."
+                className="w-full px-2 py-1 border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-900 font-bold"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold text-slate-500">Éléments de la liste:</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const currentItems = content?.items || [
+                      { id: '1', text: 'Premier point', level: 0 }
+                    ];
+                    const items = currentItems.map((it: any, i: number) =>
+                      typeof it === 'string' ? { id: `item-${i}`, text: it, level: 0 } : it
+                    );
+                    items.push({ id: `item-${Date.now()}`, text: 'Nouvel élément', level: 0 });
+                    updateContent({ items });
+                  }}
+                  className="px-2 py-0.5 bg-blue-600 text-white rounded text-[10px] font-bold flex items-center gap-1 cursor-pointer"
+                >
+                  <Plus className="w-3 h-3" />
+                  <span>+ Puce</span>
+                </button>
+              </div>
+
+              <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                {(content?.items || []).map((it: any, idx: number) => {
+                  const itemObj = typeof it === 'string' ? { id: `item-${idx}`, text: it, level: 0 } : it;
+                  return (
+                    <div key={itemObj.id || idx} className="flex items-center space-x-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-1 rounded-lg">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const items = [...(content?.items || [])];
+                          const curLevel = itemObj.level || 0;
+                          items[idx] = { ...itemObj, level: Math.max(0, curLevel - 1) };
+                          updateContent({ items });
+                        }}
+                        className="px-1 py-0.5 text-[9px] bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 rounded font-bold"
+                        title="Désindenter"
+                      >
+                        ←
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const items = [...(content?.items || [])];
+                          const curLevel = itemObj.level || 0;
+                          items[idx] = { ...itemObj, level: Math.min(2, curLevel + 1) };
+                          updateContent({ items });
+                        }}
+                        className="px-1 py-0.5 text-[9px] bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 rounded font-bold"
+                        title="Indenter"
+                      >
+                        →
+                      </button>
+                      <input
+                        type="text"
+                        value={itemObj.text || ''}
+                        onChange={(e) => {
+                          const items = [...(content?.items || [])];
+                          items[idx] = { ...itemObj, text: e.target.value };
+                          updateContent({ items });
+                        }}
+                        className="flex-1 px-1.5 py-0.5 text-xs bg-transparent border-none outline-none font-medium"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const items = (content?.items || []).filter((_: any, i: number) => i !== idx);
+                          updateContent({ items });
+                        }}
+                        className="text-red-500 hover:text-red-700 px-1 font-bold cursor-pointer"
+                        title="Supprimer"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 3. IMAGE ELEMENT / PHOTO */}
         {(type === 'image' || (type === 'section' && content?.section === undefined)) && (
           <div className="space-y-2">
             <span className="text-[10px] text-slate-500 font-medium">Photo de profil:</span>

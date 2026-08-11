@@ -130,70 +130,88 @@ export const ElementRenderer: React.FC<ElementRendererProps> = ({
       }
 
       case 'list': {
-        const listType = content?.type || 'bullet';
-        const items = content?.items || [
-          { id: '1', text: 'Premier point clé' },
-          { id: '2', text: 'Deuxième point fort' },
-          { id: '3', text: 'Troisième compétence' }
+        const bulletStyle = content?.bulletStyle || content?.type || 'disc';
+        const rawItems = content?.items || [
+          { id: '1', text: 'Premier point clé', level: 0 },
+          { id: '2', text: 'Deuxième point fort', level: 0 },
+          { id: '3', text: 'Troisième compétence', level: 0 }
         ];
+
+        const items = rawItems.map((it: any, i: number) =>
+          typeof it === 'string' ? { id: `item-${i}`, text: it, level: 0 } : { level: 0, ...it }
+        );
+
+        const getBulletPrefix = (style: string, level: number, idx: number) => {
+          if (style === 'square') return '■';
+          if (style === 'arrow') return '➢';
+          if (style === 'check') return '✓';
+          if (style === 'star') return '★';
+          if (style === 'dash') return '-';
+          if (style === 'numbered') return `${idx + 1}.`;
+          return level > 0 ? '◦' : '•';
+        };
+
+        const updateItemText = (idx: number, newText: string) => {
+          const updated = [...items];
+          updated[idx] = { ...updated[idx], text: newText };
+          onContentChange?.({ ...content, items: updated });
+        };
+
+        const handleKeyDown = (e: React.KeyboardEvent<HTMLElement>, idx: number) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            const updated = [...items];
+            updated.splice(idx + 1, 0, { id: `item-${Date.now()}`, text: '', level: items[idx]?.level || 0 });
+            onContentChange?.({ ...content, items: updated });
+          } else if (e.key === 'Backspace' && items[idx].text === '' && items.length > 1) {
+            e.preventDefault();
+            const updated = items.filter((_, i) => i !== idx);
+            onContentChange?.({ ...content, items: updated });
+          } else if (e.key === 'Tab') {
+            e.preventDefault();
+            const updated = [...items];
+            const currentLvl = updated[idx].level || 0;
+            const newLvl = e.shiftKey ? Math.max(0, currentLvl - 1) : Math.min(2, currentLvl + 1);
+            updated[idx] = { ...updated[idx], level: newLvl };
+            onContentChange?.({ ...content, items: updated });
+          }
+        };
 
         return (
           <div className="w-full space-y-1.5" style={styleObj}>
             {content?.title && (
-              <h4 className="font-bold text-sm text-slate-900 dark:text-slate-100 mb-1">
+              <h4
+                contentEditable={true}
+                suppressContentEditableWarning
+                onBlur={(e) => onContentChange?.({ ...content, title: e.currentTarget.innerText })}
+                className="font-bold text-sm text-slate-900 dark:text-slate-100 mb-1 outline-none"
+              >
                 {content.title}
               </h4>
             )}
 
-            {listType === 'bullet' && (
-              <ul className="list-disc list-inside space-y-1">
-                {items.map((item: any, idx: number) => (
-                  <li key={item?.id || idx} className="text-xs">
-                    {typeof item === 'string' ? item : item.text}
-                  </li>
-                ))}
-              </ul>
-            )}
-
-            {listType === 'numbered' && (
-              <ol className="list-decimal list-inside space-y-1">
-                {items.map((item: any, idx: number) => (
-                  <li key={item?.id || idx} className="text-xs">
-                    {typeof item === 'string' ? item : item.text}
-                  </li>
-                ))}
-              </ol>
-            )}
-
-            {listType === 'checklist' && (
-              <div className="space-y-1">
-                {items.map((item: any, idx: number) => (
-                  <div key={item?.id || idx} className="flex items-center space-x-2 text-xs">
-                    <CheckCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                    <span>{typeof item === 'string' ? item : item.text}</span>
+            <div className="space-y-1">
+              {items.map((item: any, idx: number) => (
+                <div
+                  key={item.id || idx}
+                  className="flex items-start space-x-2 text-xs"
+                  style={{ paddingLeft: `${(item.level || 0) * 16}px` }}
+                >
+                  <span className="font-bold text-blue-600 dark:text-blue-400 shrink-0 select-none">
+                    {getBulletPrefix(bulletStyle, item.level || 0, idx)}
+                  </span>
+                  <div
+                    contentEditable={true}
+                    suppressContentEditableWarning
+                    onBlur={(e) => updateItemText(idx, e.currentTarget.innerText)}
+                    onKeyDown={(e) => handleKeyDown(e, idx)}
+                    className="outline-none min-w-[20px] flex-1 cursor-text focus:bg-blue-50/50 dark:focus:bg-blue-950/50 rounded px-1"
+                  >
+                    {item.text}
                   </div>
-                ))}
-              </div>
-            )}
-
-            {listType === 'skill-progress' && (
-              <div className="space-y-2">
-                {items.map((item: any, idx: number) => (
-                  <div key={item?.id || idx} className="space-y-0.5">
-                    <div className="flex justify-between text-xs font-semibold">
-                      <span>{item.text}</span>
-                      <span className="opacity-75">{item.value || 80}%</span>
-                    </div>
-                    <div className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-blue-600 rounded-full transition-all"
-                        style={{ width: `${item.value || 80}%` }}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+                </div>
+              ))}
+            </div>
           </div>
         );
       }
@@ -269,25 +287,60 @@ export const ElementRenderer: React.FC<ElementRendererProps> = ({
         }
 
         // Header Banner / Card
+        const photoFormeClass =
+          content?.photoForme === 'ronde' || !content?.photoForme
+            ? 'rounded-full'
+            : content?.photoForme === 'arrondie'
+            ? 'rounded-xl'
+            : content?.photoForme === 'galet'
+            ? 'rounded-[35%_65%_70%_30%/30%_30%_70%_70%]'
+            : content?.photoForme === 'arche'
+            ? 'rounded-t-full rounded-b-lg'
+            : content?.photoForme === 'hexagone'
+            ? 'rounded-2xl rotate-3'
+            : 'rounded-none';
+
+        const photoSizePx = content?.photoTaille || 70;
+
         return (
           <div
-            className="w-full flex items-center justify-between p-4 rounded-xl shadow-xs"
-            style={{ backgroundColor: style?.backgroundColor || '#2563EB', color: '#FFFFFF' }}
+            className="w-full flex items-center justify-between p-4 rounded-xl shadow-xs relative"
+            style={{ backgroundColor: style?.backgroundColor || '#2563EB', color: style?.color || '#FFFFFF' }}
           >
-            <div className="space-y-1">
-              <h1 className="text-xl font-black uppercase tracking-tight">{content?.title || 'Votre Nom'}</h1>
-              <p className="text-xs font-bold uppercase tracking-wider opacity-90">{content?.subtitle || 'Titre Professionnel'}</p>
+            <div className="space-y-1 flex-1 pr-3">
+              <h1
+                contentEditable={true}
+                suppressContentEditableWarning
+                onBlur={(e) =>
+                  onContentChange?.({ ...content, title: e.currentTarget.innerText })
+                }
+                className="text-xl font-black uppercase tracking-tight outline-none focus:bg-white/10 rounded px-1"
+              >
+                {content?.title || 'Votre Nom'}
+              </h1>
+              <p
+                contentEditable={true}
+                suppressContentEditableWarning
+                onBlur={(e) =>
+                  onContentChange?.({ ...content, subtitle: e.currentTarget.innerText })
+                }
+                className="text-xs font-bold uppercase tracking-wider opacity-90 outline-none focus:bg-white/10 rounded px-1"
+              >
+                {content?.subtitle || 'Titre Professionnel'}
+              </p>
               <div className="flex flex-wrap gap-3 text-[10px] opacity-80 pt-1">
                 {content?.email && <span>📧 {content.email}</span>}
                 {content?.phone && <span>📞 {content.phone}</span>}
                 {content?.location && <span>📍 {content.location}</span>}
+                {content?.linkedin && <span>💼 {content.linkedin}</span>}
               </div>
             </div>
             {content?.showPhoto && content?.photoUrl && (
               <img
                 src={content.photoUrl}
                 alt="Profile"
-                className="w-16 h-16 rounded-full object-cover border-2 border-white/80 shadow-md shrink-0"
+                style={{ width: `${photoSizePx}px`, height: `${photoSizePx}px` }}
+                className={`object-cover border-2 border-white/80 shadow-md shrink-0 ${photoFormeClass}`}
               />
             )}
           </div>

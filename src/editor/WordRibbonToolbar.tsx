@@ -104,6 +104,7 @@ interface WordRibbonToolbarProps {
   onOpenAIAssistant: () => void;
   onOpenATSAnalyzer: () => void;
   onOpenProfileEditor?: () => void;
+  onOpenPresetElementsModal?: () => void;
   onExportPDF: () => void;
   onSaveCV: () => void;
   autoSaveStatus?: 'saved' | 'saving' | 'error';
@@ -160,6 +161,7 @@ export const WordRibbonToolbar: React.FC<WordRibbonToolbarProps> = ({
   onOpenAIAssistant,
   onOpenATSAnalyzer,
   onOpenProfileEditor,
+  onOpenPresetElementsModal,
   onExportPDF,
   onSaveCV,
   autoSaveStatus,
@@ -625,6 +627,13 @@ export const WordRibbonToolbar: React.FC<WordRibbonToolbarProps> = ({
                 <span>Éditer En-tête & Profil</span>
               </button>
               <button
+                onClick={onOpenPresetElementsModal}
+                className="px-3 py-1.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-extrabold rounded-xl flex items-center space-x-1.5 shadow-md cursor-pointer"
+              >
+                <Sparkles className="w-4 h-4 text-amber-300" />
+                <span>Éléments par défaut (30 Modèles)</span>
+              </button>
+              <button
                 onClick={() => fileInputRef.current?.click()}
                 className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-800 dark:text-slate-200 font-bold rounded-xl flex items-center space-x-1.5 cursor-pointer"
               >
@@ -762,6 +771,118 @@ export const WordRibbonToolbar: React.FC<WordRibbonToolbarProps> = ({
                 />
               </div>
             )}
+          </div>
+        )}
+
+        {/* TAB: RÉFÉRENCES (Sections Prédéfinies CV) */}
+        {activeTab === 'references' && (
+          <div className="flex items-center space-x-3 divide-x divide-slate-200 dark:divide-slate-800 shrink-0">
+            <div className="pr-3 flex items-center space-x-1.5">
+              <button
+                onClick={onOpenPresetElementsModal}
+                className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-extrabold rounded-xl flex items-center space-x-1.5 shadow-xs cursor-pointer text-xs"
+              >
+                <Sparkles className="w-4 h-4 text-amber-300" />
+                <span>Bibliothèque d'Exemples (30 CVs)</span>
+              </button>
+            </div>
+
+            <div className="px-3 flex items-center space-x-1.5 flex-wrap gap-1">
+              {[
+                { name: 'Expérience', type: 'experience', icon: Briefcase },
+                { name: 'Formation', type: 'formation', icon: GraduationCap },
+                { name: 'Compétences', type: 'competences', icon: Award },
+                { name: 'Langues', type: 'langues', icon: Globe },
+                { name: 'Projets', type: 'projets', icon: Sparkles },
+                { name: 'Certifications', type: 'certifications', icon: Check }
+              ].map((sec) => {
+                const Icon = sec.icon;
+                return (
+                  <button
+                    key={sec.type}
+                    onClick={() => {
+                      onAddElement('section', {
+                        section: {
+                          id: `sec-quick-${Date.now()}`,
+                          type: sec.type as any,
+                          titre: sec.name.toUpperCase(),
+                          ordre: 99,
+                          visible: true,
+                          contenu: []
+                        }
+                      });
+                    }}
+                    className="px-2 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-[11px] rounded-lg flex items-center space-x-1 cursor-pointer"
+                  >
+                    <Icon className="w-3.5 h-3.5 text-blue-600" />
+                    <span>+ {sec.name}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* TAB: PUBLIPOSTAGE (Bibliothèque d'icônes & Formes) */}
+        {activeTab === 'publipostage' && (
+          <div className="flex items-center space-x-3 divide-x divide-slate-200 dark:divide-slate-800 shrink-0">
+            {/* Quick Contact Icons */}
+            <div className="pr-3 flex items-center space-x-1 font-semibold text-xs">
+              <span className="text-[10px] font-bold text-slate-400 mr-1">Icônes Réseaux :</span>
+              <button
+                onClick={() => onAddElement('icon', { iconName: 'Phone', text: '+33 6 00 00 00 00' })}
+                className="p-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 rounded-lg cursor-pointer"
+                title="Insérer Téléphone"
+              >
+                📞
+              </button>
+              <button
+                onClick={() => onAddElement('icon', { iconName: 'Mail', text: 'email@exemple.com' })}
+                className="p-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 rounded-lg cursor-pointer"
+                title="Insérer Email"
+              >
+                📧
+              </button>
+              <button
+                onClick={() => onAddElement('icon', { iconName: 'MapPin', text: 'Paris, France' })}
+                className="p-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 rounded-lg cursor-pointer"
+                title="Insérer Adresse"
+              >
+                📍
+              </button>
+              <button
+                onClick={() => onAddElement('icon', { iconName: 'Linkedin', text: 'linkedin.com/in/profil' })}
+                className="p-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 rounded-lg cursor-pointer"
+                title="Insérer LinkedIn"
+              >
+                💼
+              </button>
+            </div>
+
+            {/* Decorative Assets */}
+            <div className="px-3 flex items-center space-x-2">
+              <button
+                onClick={() => onAddShape('badge')}
+                className="px-2.5 py-1.5 border border-slate-300 dark:border-slate-700 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 font-bold text-xs flex items-center space-x-1 cursor-pointer"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                <span>Insigne Pilule</span>
+              </button>
+              <button
+                onClick={() => onAddShape('pillar')}
+                className="px-2.5 py-1.5 border border-slate-300 dark:border-slate-700 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 font-bold text-xs flex items-center space-x-1 cursor-pointer"
+              >
+                <Columns className="w-3.5 h-3.5 text-purple-600" />
+                <span>Barre Latérale</span>
+              </button>
+              <button
+                onClick={() => onAddList('skill-progress')}
+                className="px-2.5 py-1.5 border border-slate-300 dark:border-slate-700 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 font-bold text-xs flex items-center space-x-1 cursor-pointer"
+              >
+                <Sliders className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Jauge Niveau</span>
+              </button>
+            </div>
           </div>
         )}
 

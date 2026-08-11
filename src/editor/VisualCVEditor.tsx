@@ -10,6 +10,7 @@ import { PropertiesPanel } from './PropertiesPanel';
 import { AIAssistantModal } from './AIAssistantModal';
 import { ATSAnalyzerModal } from './ATSAnalyzerModal';
 import { HeaderProfileModal } from './HeaderProfileModal';
+import { PresetElementsModal } from './PresetElementsModal';
 import { exportCVToPDF } from '../utils/pdfExport';
 import { PlusCircle, Sliders, Sparkles, FileSpreadsheet, X, User } from 'lucide-react';
 
@@ -57,6 +58,7 @@ export const VisualCVEditor: React.FC<VisualCVEditorProps> = ({
   const [showAIModal, setShowAIModal] = useState(false);
   const [showATSModal, setShowATSModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
+  const [showPresetModal, setShowPresetModal] = useState(false);
 
   // Keep activePageId valid if pages change
   useEffect(() => {
@@ -405,6 +407,7 @@ export const VisualCVEditor: React.FC<VisualCVEditorProps> = ({
         onOpenAIAssistant={() => setShowAIModal(true)}
         onOpenATSAnalyzer={() => setShowATSModal(true)}
         onOpenProfileEditor={() => setShowProfileModal(true)}
+        onOpenPresetElementsModal={() => setShowPresetModal(true)}
         onSaveCV={() => onSaveCV(convertDocumentToLegacyCV(document))}
         onExportPDF={() => exportCVToPDF('cv-preview-container', `${cv.titreCV || cv.titre || 'CV'}.pdf`)}
         onToggleViewMode={onToggleViewMode}
@@ -575,6 +578,24 @@ export const VisualCVEditor: React.FC<VisualCVEditorProps> = ({
           cv={cv}
           onUpdateCV={(updatedPatch) => {
             const updated = { ...cv, ...updatedPatch };
+            onSaveCV(updated);
+          }}
+        />
+      )}
+
+      {showPresetModal && (
+        <PresetElementsModal
+          isOpen={showPresetModal}
+          onClose={() => setShowPresetModal(false)}
+          onAddSection={(sec) => {
+            handleAddElement('section', { section: sec });
+          }}
+          onApplyProfileHeader={(profileData, photoUrl) => {
+            const updated = {
+              ...cv,
+              profil: { ...(cv.profil || {}), ...profileData },
+              photoUrl: photoUrl || cv.photoUrl
+            };
             onSaveCV(updated);
           }}
         />

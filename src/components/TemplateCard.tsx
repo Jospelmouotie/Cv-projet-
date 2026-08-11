@@ -37,11 +37,11 @@ export const TemplateCard: React.FC<TemplateCardProps> = ({ template, langue, on
       
       {/* Thumbnail Container - Compact Scaled A4 Preview */}
       <div 
-        className="relative h-64 sm:h-72 bg-slate-100 dark:bg-slate-950/90 border-b border-slate-200 dark:border-slate-800 overflow-hidden flex items-start justify-center cursor-pointer select-none"
+        className="relative h-80 sm:h-[370px] bg-slate-100 dark:bg-slate-950/90 border-b border-slate-200 dark:border-slate-800 overflow-hidden flex items-start justify-center cursor-pointer select-none"
         onClick={() => onPreviewModal(template)}
       >
         {/* Scaled A4 Page Container */}
-        <div className="w-[800px] h-[1131px] origin-top transform scale-[0.24] sm:scale-[0.26] pointer-events-none select-none shadow-md mt-2 rounded-sm overflow-hidden">
+        <div className="w-[800px] h-[1131px] origin-top transform scale-[0.30] sm:scale-[0.34] pointer-events-none select-none shadow-md mt-2 rounded-sm overflow-hidden">
           <CVPreview cv={dummyCv} interactivePreview={false} />
         </div>
 
