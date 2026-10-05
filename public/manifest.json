@@ -1,0 +1,57 @@
+{
+  "name": "MyCV Builder — Créateur de CV Pro HD",
+  "short_name": "MyCV Builder",
+  "description": "Créateur et éditeur de CV professionnel type Canva avec modèles HD, IA et export PDF",
+  "start_url": "/",
+  "id": "/",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#0a0a0a",
+  "orientation": "any",
+  "scope": "/",
+  "lang": "fr",
+  "categories": ["productivity", "business", "utilities"],
+  "icons": [
+    {
+      "src": "/pwa-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Nouveau CV",
+      "short_name": "Nouveau CV",
+      "description": "Créer un nouveau CV professionnel",
+      "url": "/?view=gallery",
+      "icons": [{ "src": "/pwa-icon.svg", "sizes": "any" }]
+    },
+    {
+      "name": "Mes CV",
+      "short_name": "Mes CV",
+      "description": "Accéder à mes CV enregistrés",
+      "url": "/?view=dashboard",
+      "icons": [{ "src": "/pwa-icon.svg", "sizes": "any" }]
+    },
+    {
+      "name": "Cibler une Offre (IA)",
+      "short_name": "Ciblage IA",
+      "description": "Adapter mon CV à une offre d'emploi",
+      "url": "/?view=job-targeting",
+      "icons": [{ "src": "/pwa-icon.svg", "sizes": "any" }]
+    }
+  ]
+}
