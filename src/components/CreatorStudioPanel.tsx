@@ -5,8 +5,12 @@ import { remapContentToTemplate, toggleColumnLayout } from '../state/cvActions';
 import { HeaderProfileModal } from '../editor/HeaderProfileModal';
 import { getTranslation, getLocalizedTemplateName, getLocalizedSectionTitle } from '../i18n/translations';
 import { FREE_TEMPLATE_IDS } from '../utils/subscriptionGates';
-import { isPaymentActive } from '../utils/adminPaidMatrix';
-import { isSubOptionPaidByAdmin, isStudioMenuPaidByAdmin } from '../utils/adminPaidMatrix';
+import {
+  FREE_STUDIO_MENU_IDS,
+  isPaymentActive,
+  isSubOptionPaidByAdmin,
+  isStudioMenuPaidByAdmin
+} from '../utils/adminPaidMatrix';
 import {
   Palette,
   Layout,
@@ -120,7 +124,7 @@ export const CreatorStudioPanel: React.FC<CreatorStudioPanelProps> = ({
 
   const isUserRestrictedCustomTemplate = Boolean(template?.id && template.id.startsWith('custom-') && normTier !== 'admin');
   const canCustomizeDecorativeWaves = canUseDecorativeWave(cv.templateId || template?.id);
-  const FREE_STUDIO_MENU_IDS = new Set(['template', 'timeline', 'sectionHeaders', 'footer']);
+  const FREE_STUDIO_MENU_ID_SET = new Set<string>(FREE_STUDIO_MENU_IDS);
   const restrictedCustomMenuIds = new Set(['background', 'header', 'sectionHeaders', 'photo', 'footer', 'footerContact', 'sidebar']);
   const restrictedCustomSubOptions = new Set([
     'sectionHeaders:underline',
@@ -137,6 +141,7 @@ export const CreatorStudioPanel: React.FC<CreatorStudioPanelProps> = ({
   // Helper to check if a menu or sub-option is locked for current user
   const checkIsLocked = (menuId: string, subOptionId?: string): boolean => {
     if (!isPaymentActive()) return false;
+    if (FREE_STUDIO_MENU_ID_SET.has(menuId)) return false;
     if (isUserRestrictedCustomTemplate) {
       const isAllowedMenu = restrictedCustomMenuIds.has(menuId);
       const isAllowedSubOption = subOptionId ? restrictedCustomSubOptions.has(subOptionId) : false;
@@ -148,18 +153,33 @@ export const CreatorStudioPanel: React.FC<CreatorStudioPanelProps> = ({
   };
 
   // Helper for label rendering with padlock badge
+  const PaidBadge: React.FC<{ active?: boolean }> = ({ active = false }) => (
+    <span
+      className={`inline-flex items-center rounded-full border text-[8px] font-black uppercase tracking-[0.12em] px-1.5 py-0.5 ${
+        active
+          ? 'border-red-400 bg-red-600 text-white'
+          : 'border-amber-400 bg-amber-300/25 text-amber-700 dark:text-amber-300'
+      }`}
+    >
+      Cárdenas
+    </span>
+  );
+
+  const CardenasBadge = PaidBadge;
+
   const OptionLabel: React.FC<{ label: string; isLocked?: boolean; isFreeBadge?: boolean; isCurrentlyActiveAndLocked?: boolean }> = ({ label, isLocked, isFreeBadge, isCurrentlyActiveAndLocked }) => (
     <div className="flex items-center justify-between gap-1 mb-1">
-      <span className={`text-xs font-bold flex items-center gap-1.5 ${isCurrentlyActiveAndLocked ? 'text-red-600 dark:text-red-400 font-extrabold' : 'text-black dark:text-white'}`}>
+      <span className={`text-xs font-bold flex items-center gap-1.5 ${isLocked ? 'text-red-600 dark:text-red-400 font-extrabold' : 'text-black dark:text-white'} ${isCurrentlyActiveAndLocked ? 'ring-1 ring-red-500/40 rounded px-1.5 py-0.5 bg-red-50/80 dark:bg-red-950/20' : ''}`}>
         <span>{label}</span>
-        {isLocked && <Lock className={`w-3.5 h-3.5 shrink-0 ${isCurrentlyActiveAndLocked ? 'text-red-500' : 'text-purple-600 dark:text-purple-400'}`} />}
+        {isLocked && <PaidBadge active={Boolean(isCurrentlyActiveAndLocked)} />}
+        {isLocked && <Lock className={`w-3.5 h-3.5 shrink-0 ${isCurrentlyActiveAndLocked ? 'text-red-500' : 'text-red-600 dark:text-red-400'}`} />}
       </span>
       {isCurrentlyActiveAndLocked ? (
         <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-red-600 text-white flex items-center gap-1 shrink-0 shadow-2xs">
           ⚠️ PAYANT ACTIF (SANS FORFAIT)
         </span>
       ) : isLocked ? (
-        <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-500 border border-amber-400/50 flex items-center gap-1 shrink-0 shadow-2xs">
+        <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-red-500/15 text-red-600 border border-red-400/50 flex items-center gap-1 shrink-0 shadow-2xs">
           <Crown className="w-2.5 h-2.5 fill-current" />
         </span>
       ) : isFreeBadge ? (
@@ -180,8 +200,8 @@ export const CreatorStudioPanel: React.FC<CreatorStudioPanelProps> = ({
     }
     if (isLocked) {
       return isSecondaryButton
-        ? 'border-purple-300/80 dark:border-purple-800/60 bg-purple-50/20 dark:bg-purple-950/20 text-neutral-800 dark:text-neutral-200 hover:border-purple-500'
-        : 'border-purple-300/80 dark:border-purple-800/60 bg-purple-50/10 dark:bg-purple-950/10 text-neutral-800 dark:text-neutral-200 hover:border-purple-500';
+        ? 'border-red-300/80 dark:border-red-800/60 bg-red-50/30 dark:bg-red-950/20 text-red-700 dark:text-red-300 hover:border-red-500'
+        : 'border-red-300/80 dark:border-red-800/60 bg-red-50/20 dark:bg-red-950/20 text-red-700 dark:text-red-300 hover:border-red-500';
     }
     return isSecondaryButton
       ? 'border-black/10 dark:border-white/10 bg-neutral-100 dark:bg-neutral-900 text-black dark:text-white hover:border-black/30'
@@ -458,11 +478,16 @@ export const CreatorStudioPanel: React.FC<CreatorStudioPanelProps> = ({
         >
           <label className="text-xs font-black uppercase tracking-wider flex items-center gap-2 text-black dark:text-white pointer-events-none">
             <Grid className="w-4 h-4 text-black dark:text-white" />
-            <span>{isEn ? '3. CV Template Choice & Presets' : isAr ? '3. اختيار نموذج السيرة الذاتية والإعدادات' : '3. Choix du Modèle de CV & Préréglages'}</span>
+            <span className={checkIsLocked('template') ? 'text-red-600 dark:text-red-400' : ''}>
+              {isEn ? '3. CV Template Choice & Presets' : isAr ? '3. اختيار نموذج السيرة الذاتية والإعدادات' : '3. Choix du Modèle de CV & Préréglages'}
+            </span>
             {checkIsLocked('template') && (
-              <span className="ml-2 inline-flex items-center gap-1 text-[9px] font-black uppercase px-2 py-0.5 bg-purple-600 text-white rounded">
-                <Lock className="w-2.5 h-2.5" /> PRO
-              </span>
+              <>
+                <CardenasBadge active />
+                <span className="ml-1 inline-flex items-center gap-1 text-[9px] font-black uppercase px-2 py-0.5 bg-red-600 text-white rounded">
+                  <Lock className="w-2.5 h-2.5" /> PRO
+                </span>
+              </>
             )}
           </label>
           {openSections.template ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
@@ -637,11 +662,16 @@ export const CreatorStudioPanel: React.FC<CreatorStudioPanelProps> = ({
         >
           <label className="text-xs font-black uppercase tracking-wider flex items-center gap-2 text-black dark:text-white pointer-events-none">
             <Columns className="w-4 h-4 text-black dark:text-white" />
-            <span>{isEn ? '4. Column Structure & Layout' : isAr ? '4. هيكل وتنسيق الأعمدة' : '4. Structure & Disposition des Colonnes'}</span>
+            <span className={checkIsLocked('sidebar') ? 'text-red-600 dark:text-red-400' : ''}>
+              {isEn ? '4. Column Structure & Layout' : isAr ? '4. هيكل وتنسيق الأعمدة' : '4. Structure & Disposition des Colonnes'}
+            </span>
             {checkIsLocked('sidebar') && (
-              <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-500 border border-amber-400/50 flex items-center gap-1 ml-auto">
-                <Lock className="w-2.5 h-2.5" /> PRO
-              </span>
+              <>
+                <CardenasBadge active />
+                <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-red-500/15 text-red-600 border border-red-400/50 flex items-center gap-1 ml-auto">
+                  <Lock className="w-2.5 h-2.5" /> PRO
+                </span>
+              </>
             )}
           </label>
           {openSections.sidebar ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
@@ -806,7 +836,7 @@ export const CreatorStudioPanel: React.FC<CreatorStudioPanelProps> = ({
             <CircleDot className="w-4 h-4 text-black dark:text-white" />
             <span>{isEn ? '12. Chronological Timeline' : isAr ? '12. الخط الزمني للخبرات' : '12. Frise Chronologique / Timeline'}</span>
             {checkIsLocked('timeline') && (
-              <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-500 border border-amber-400/50 flex items-center gap-1 ml-auto">
+              <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-red-500/15 text-red-600 border border-red-400/50 flex items-center gap-1 ml-auto">
                 <Lock className="w-2.5 h-2.5" /> PRO
               </span>
             )}
@@ -829,14 +859,14 @@ export const CreatorStudioPanel: React.FC<CreatorStudioPanelProps> = ({
                   className="w-full p-2 bg-neutral-100 dark:bg-neutral-900 border border-black/20 dark:border-white/20 rounded-lg text-xs font-bold text-black dark:text-white"
                 >
                   <option value="none">Aucune ligne (Standard)</option>
-                  <option value="line-dots" className={checkIsLocked('timeline', 'timeline:line-dots') ? 'text-purple-600' : ''}>
-                    {checkIsLocked('timeline', 'timeline:line-dots') ? '🔒 ' : ''}Ligne continue avec pastilles reliées
+                  <option value="line-dots" className={checkIsLocked('timeline', 'timeline:line-dots') ? 'text-red-600 font-bold' : ''}>
+                    {checkIsLocked('timeline', 'timeline:line-dots') ? '🔒 ' : ''}Ligne continue avec pastilles reliées {checkIsLocked('timeline', 'timeline:line-dots') ? '• Cárdenas' : ''}
                   </option>
-                  <option value="left-bar" className={checkIsLocked('timeline', 'timeline:left-bar') ? 'text-purple-600' : ''}>
-                    {checkIsLocked('timeline', 'timeline:left-bar') ? '🔒 ' : ''}Barre latérale d'accentuation
+                  <option value="left-bar" className={checkIsLocked('timeline', 'timeline:left-bar') ? 'text-red-600 font-bold' : ''}>
+                    {checkIsLocked('timeline', 'timeline:left-bar') ? '🔒 ' : ''}Barre latérale d'accentuation {checkIsLocked('timeline', 'timeline:left-bar') ? '• Cárdenas' : ''}
                   </option>
-                  <option value="accent-pills" className={checkIsLocked('timeline', 'timeline:accent-pills') ? 'text-purple-600' : ''}>
-                    {checkIsLocked('timeline', 'timeline:accent-pills') ? '🔒 ' : ''}Capsules / Pills d'étiquettes
+                  <option value="accent-pills" className={checkIsLocked('timeline', 'timeline:accent-pills') ? 'text-red-600 font-bold' : ''}>
+                    {checkIsLocked('timeline', 'timeline:accent-pills') ? '🔒 ' : ''}Capsules / Pills d'étiquettes {checkIsLocked('timeline', 'timeline:accent-pills') ? '• Cárdenas' : ''}
                   </option>
                 </select>
               </div>
@@ -904,7 +934,7 @@ export const CreatorStudioPanel: React.FC<CreatorStudioPanelProps> = ({
             <AlignLeft className="w-4 h-4 text-black dark:text-white" />
             <span>{isEn ? '6. Section Header Styles' : isAr ? '6. أنماط رؤوس الأقسام' : '6. Styles d\'En-Tête de Section'}</span>
             {checkIsLocked('sectionHeaders') && (
-              <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-500 border border-amber-400/50 flex items-center gap-1 ml-auto">
+              <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-red-500/15 text-red-600 border border-red-400/50 flex items-center gap-1 ml-auto">
                 <Lock className="w-2.5 h-2.5" /> PRO
               </span>
             )}
@@ -929,21 +959,21 @@ export const CreatorStudioPanel: React.FC<CreatorStudioPanelProps> = ({
                 className="w-full p-2 bg-neutral-100 dark:bg-neutral-900 border border-black/20 dark:border-white/20 rounded-lg text-xs font-bold text-black dark:text-white"
               >
                 <option value="disc">• Disque rond classique</option>
-                <option value="square" className={checkIsLocked('bullets', 'bullets:square') ? 'text-purple-600' : ''}>
-                  {checkIsLocked('bullets', 'bullets:square') ? '🔒 ' : ''}■ Carré plein géométrique
+                <option value="square" className={checkIsLocked('bullets', 'bullets:square') ? 'text-red-600 font-bold' : ''}>
+                  {checkIsLocked('bullets', 'bullets:square') ? '🔒 ' : ''}■ Carré plein géométrique {checkIsLocked('bullets', 'bullets:square') ? '• Cárdenas' : ''}
                 </option>
-                <option value="arrow" className={checkIsLocked('bullets', 'bullets:arrow') ? 'text-purple-600' : ''}>
-                  {checkIsLocked('bullets', 'bullets:arrow') ? '🔒 ' : ''}▸ Flèche d'action moderne
+                <option value="arrow" className={checkIsLocked('bullets', 'bullets:arrow') ? 'text-red-600 font-bold' : ''}>
+                  {checkIsLocked('bullets', 'bullets:arrow') ? '🔒 ' : ''}▸ Flèche d'action moderne {checkIsLocked('bullets', 'bullets:arrow') ? '• Cárdenas' : ''}
                 </option>
-                <option value="check" className={checkIsLocked('bullets', 'bullets:check') ? 'text-purple-600' : ''}>
-                  {checkIsLocked('bullets', 'bullets:check') ? '🔒 ' : ''}✓ Coche de validation
+                <option value="check" className={checkIsLocked('bullets', 'bullets:check') ? 'text-red-600 font-bold' : ''}>
+                  {checkIsLocked('bullets', 'bullets:check') ? '🔒 ' : ''}✓ Coche de validation {checkIsLocked('bullets', 'bullets:check') ? '• Cárdenas' : ''}
                 </option>
-                <option value="star" className={checkIsLocked('bullets', 'bullets:star') ? 'text-purple-600' : ''}>
-                  {checkIsLocked('bullets', 'bullets:star') ? '🔒 ' : ''}★ Étoile d'impact
+                <option value="star" className={checkIsLocked('bullets', 'bullets:star') ? 'text-red-600 font-bold' : ''}>
+                  {checkIsLocked('bullets', 'bullets:star') ? '🔒 ' : ''}★ Étoile d'impact {checkIsLocked('bullets', 'bullets:star') ? '• Cárdenas' : ''}
                 </option>
                 <option value="dash">— Tiret discret</option>
-                <option value="numbered" className={checkIsLocked('bullets', 'bullets:numbered') ? 'text-purple-600' : ''}>
-                  {checkIsLocked('bullets', 'bullets:numbered') ? '🔒 ' : ''}1. 2. 3. Numéroté
+                <option value="numbered" className={checkIsLocked('bullets', 'bullets:numbered') ? 'text-red-600 font-bold' : ''}>
+                  {checkIsLocked('bullets', 'bullets:numbered') ? '🔒 ' : ''}1. 2. 3. Numéroté {checkIsLocked('bullets', 'bullets:numbered') ? '• Cárdenas' : ''}
                 </option>
                 <option value="none">Sans puce (Texte direct)</option>
               </select>

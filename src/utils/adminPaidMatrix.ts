@@ -266,10 +266,14 @@ const ALL_STUDIO_MENU_IDS = [
   'footerContact'
 ];
 
-const FREE_STUDIO_MENU_IDS = ['template', 'timeline'];
+export const FREE_STUDIO_MENU_IDS = ['template', 'timeline', 'sectionHeaders', 'footer', 'footerContact'] as const;
+
+export function getFreeStudioMenuIds(): string[] {
+  return [...FREE_STUDIO_MENU_IDS];
+}
 
 export const DEFAULT_ADMIN_PAID_MATRIX: AdminPaidMatrixConfig = {
-  paidTemplates: [], // Les modèles sont gérés individuellement
+  paidTemplates: CV_TEMPLATES.map((template) => template.id), // Tous les modèles intégrés sont payants par défaut
   paidStudioTabs: [], // Les onglets studio sont gérés individuellement
   paidFonts: [], // Les polices sont gratuites
   paidPatterns: [], // Les motifs sont gratuits
@@ -277,23 +281,20 @@ export const DEFAULT_ADMIN_PAID_MATRIX: AdminPaidMatrixConfig = {
   paidExportFormats: [], // Les formats d'export sont gérés par la logique de paiement
   paidFeatures: [], // Les fonctionnalités sont gérées individuellement
   paidStudioMenus: [
-    'sidebar', // Personnalisation sidebar payante
-    'header', // Style en-tête payant
-    'sectionHeaders', // Styles d'en-tête de section payants
-    'typography', // Typographie payante
-    'titlesCase', // Casse et alignement des titres payant
-    'background', // Arrière-plan payant
-    'photo', // Photo payante
-    'contactBadges', // Badges contact payants
-    'bullets', // Puces payantes
-    'shadows', // Ombres payantes
-    'skills', // Compétences payantes
-    'pageCalibration', // Marges page payantes
-    'experiences', // Expériences payantes
-    'formations', // Formations payantes
-    'individualSection', // Style individuel par section payant
-    'footer', // Pied de page payant
-    'footerContact' // Footer contact payant
+    'sidebar',
+    'header',
+    'typography',
+    'titlesCase',
+    'background',
+    'photo',
+    'contactBadges',
+    'bullets',
+    'shadows',
+    'skills',
+    'pageCalibration',
+    'experiences',
+    'formations',
+    'individualSection'
   ],
   paidSubOptions: [
     'sidebar:bg_type',
@@ -380,6 +381,10 @@ export function isPaymentActive(): boolean {
 }
 
 export function getAdminPaidMatrixConfig(): AdminPaidMatrixConfig {
+  if (typeof window === 'undefined' || !('localStorage' in window)) {
+    return DEFAULT_ADMIN_PAID_MATRIX;
+  }
+
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
@@ -402,6 +407,10 @@ export function getAdminPaidMatrixConfig(): AdminPaidMatrixConfig {
 
 // Fetch from backend API and update localStorage
 export async function syncAdminPaidMatrixFromBackend(): Promise<AdminPaidMatrixConfig> {
+  if (typeof window === 'undefined' || !('localStorage' in window)) {
+    return DEFAULT_ADMIN_PAID_MATRIX;
+  }
+
   try {
     const token = localStorage.getItem('cv_builder_token');
     const headers: Record<string, string> = {};
@@ -466,16 +475,16 @@ export function isStudioTabPaidByAdmin(tabId: string): boolean {
 
 export function isStudioMenuPaidByAdmin(menuId: string): boolean {
   if (!isPaymentActive()) return false;
-  // Always allow the 4 free menus for freemium users
-  if (FREE_STUDIO_MENU_IDS.includes(menuId)) return false;
+  // Only the truly free studio menus remain accessible without a paid plan.
+  if (FREE_STUDIO_MENU_IDS.includes(menuId as typeof FREE_STUDIO_MENU_IDS[number])) return false;
   const config = getAdminPaidMatrixConfig();
   return config.paidStudioMenus.includes(menuId);
 }
 
 export function isSubOptionPaidByAdmin(subOptionId: string, parentMenuId?: string): boolean {
   if (!isPaymentActive()) return false;
-  // Always allow sub-options of free menus for freemium users
-  if (parentMenuId && FREE_STUDIO_MENU_IDS.includes(parentMenuId)) return false;
+  // Always allow sub-options of free menus for freemium users.
+  if (parentMenuId && FREE_STUDIO_MENU_IDS.includes(parentMenuId as typeof FREE_STUDIO_MENU_IDS[number])) return false;
   const config = getAdminPaidMatrixConfig();
   if (config.paidSubOptions.includes(subOptionId)) return true;
   if (parentMenuId && config.paidStudioMenus.includes(parentMenuId)) return true;
