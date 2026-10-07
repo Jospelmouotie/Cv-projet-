@@ -216,7 +216,7 @@ export const CVTranslatorView: React.FC<CVTranslatorViewProps> = ({
       onSaveCv(translatedCv);
       setDownloading(true);
       try {
-        await exportCVToPDF('cv-preview-container', `${translatedCv.titre || 'CV_Traduit'}.pdf`, false);
+        await exportCVToPDF('cv-preview-container', `${translatedCv.titre || 'CV_Traduit'}.pdf`, false, translatedCv);
       } catch (e) {
         console.error(e);
       } finally {

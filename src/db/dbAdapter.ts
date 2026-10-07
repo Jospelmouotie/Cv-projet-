@@ -1,15 +1,16 @@
 import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
-import { db } from './index.js';
-import { users, documents, cvs, coverLetters, payments, appSettings, passwordResets, subscriptions } from './schema.js';
+import { db, isPostgresAvailable, refreshPostgresAvailability } from './index.js';
+import { users, documents, cvs, coverLetters, payments, appSettings, passwordResets, subscriptions, adminTemplates } from './schema.js';
 import { eq, and } from 'drizzle-orm';
 import { getSqliteDb } from './sqliteEngine.js';
 
-const isSqlAvailable = (): boolean => {
-  return !!process.env.DATABASE_URL || !!process.env.SQL_HOST;
-};
+const isSqlAvailable = (): boolean => isPostgresAvailable();
+
+export const ensurePostgresReadiness = async () => refreshPostgresAvailability();
 
 export const dbAdapter = {
+  ensurePostgresReadiness,
   // -------------------------------------------------------------------
   // USERS
   // -------------------------------------------------------------------
@@ -1649,17 +1650,85 @@ export const dbAdapter = {
   },
 
   async deletePasswordResetToken(email: string) {
-    const normalizedEmail = email.toLowerCase().trim();
+    const normalized = email.toLowerCase().trim();
     if (isSqlAvailable()) {
       try {
-        await db.delete(passwordResets).where(eq(passwordResets.email, normalizedEmail));
+        await db.delete(passwordResets).where(eq(passwordResets.email, normalized));
       } catch (err) {
-        console.warn('PostgreSQL delete reset token failed:', err);
+        console.warn('PostgreSQL delete reset token failed, fallback to SQLite:', err);
       }
     }
-
     const sqlite = getSqliteDb();
-    sqlite.prepare('DELETE FROM password_resets WHERE email = ?').run(normalizedEmail);
-    return true;
-  }
+    sqlite.prepare('DELETE FROM password_resets WHERE email = ?').run(normalized);
+  },
+
+  // -------------------------------------------------------------------
+  // ADMIN CUSTOM TEMPLATES
+  // -------------------------------------------------------------------
+  async getAdminTemplates() {
+    if (isSqlAvailable()) {
+      try {
+        const results = await db.select().from(adminTemplates);
+        return results.map(t => ({
+          ...t,
+          description: typeof t.description === 'string' ? JSON.parse(t.description) : t.description,
+          themeConfig: typeof t.themeConfig === 'string' ? JSON.parse(t.themeConfig) : t.themeConfig,
+        }));
+      } catch (err) {
+        console.warn('PostgreSQL get admin templates failed, fallback to SQLite:', err);
+      }
+    }
+    const sqlite = getSqliteDb();
+    const rows = sqlite.prepare('SELECT * FROM admin_templates').all() as any[];
+    return rows.map(row => ({
+      ...row,
+      description: JSON.parse(row.description),
+      themeConfig: JSON.parse(row.themeConfig),
+    }));
+  },
+
+  async createAdminTemplate(template: any) {
+    if (isSqlAvailable()) {
+      try {
+        await db.insert(adminTemplates).values(template);
+      } catch (err) {
+        console.warn('PostgreSQL create admin template failed, fallback to SQLite:', err);
+      }
+    }
+    const sqlite = getSqliteDb();
+    sqlite.prepare(`
+      INSERT INTO admin_templates (id, name, category, description, layoutType, layoutFamily, defaultAccent, defaultSecondaryAccent, defaultFont, badgeText, previewImage, preview, requiredTier, themeConfig, createdBy, createdAt, updatedAt)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      template.id,
+      template.name,
+      template.category,
+      template.description,
+      template.layoutType,
+      template.layoutFamily,
+      template.defaultAccent,
+      template.defaultSecondaryAccent,
+      template.defaultFont,
+      template.badgeText,
+      template.previewImage,
+      template.preview,
+      template.requiredTier,
+      template.themeConfig,
+      template.createdBy,
+      template.createdAt,
+      template.updatedAt
+    );
+  },
+
+  async deleteAdminTemplate(id: string) {
+    if (isSqlAvailable()) {
+      try {
+        await db.delete(adminTemplates).where(eq(adminTemplates.id, id));
+      } catch (err) {
+        console.warn('PostgreSQL delete admin template failed, fallback to SQLite:', err);
+      }
+    }
+    const sqlite = getSqliteDb();
+    sqlite.prepare('DELETE FROM admin_templates WHERE id = ?').run(id);
+  },
 };

@@ -11,7 +11,6 @@ import {
   isPaymentActive,
   getAdminPaidMatrixConfig
 } from './adminPaidMatrix';
-import { CV_TEMPLATES } from '../data/templates';
 import { TEMPLATE_PRESETS } from '../data/templatePresets';
 
 /**
@@ -37,11 +36,28 @@ export const DEFAULT_FREE_TEMPLATE_IDS: string[] = [];
 export const FREE_TEMPLATE_IDS: string[] = getFreeTemplateIds();
 
 export function getFreeTemplateIds(): string[] {
-  if (typeof window === 'undefined') {
-    return DEFAULT_FREE_TEMPLATE_IDS;
-  }
+  if (!isPaymentActive()) return DEFAULT_FREE_TEMPLATE_IDS;
 
   try {
+    // Try to fetch from backend API first
+    const token = localStorage.getItem('cv_builder_token');
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    
+    fetch('/api/admin/templates', { headers })
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        if (data && Array.isArray(data.templates)) {
+          const templateIds = data.templates.map((t: any) => t.id);
+          localStorage.setItem('admin_custom_templates', JSON.stringify(data.templates));
+          return templateIds;
+        }
+      })
+      .catch(() => {});
+
+    // Fallback to localStorage
     const raw = localStorage.getItem('admin_custom_templates');
     if (!raw) return DEFAULT_FREE_TEMPLATE_IDS;
     const parsed = JSON.parse(raw);
@@ -341,21 +357,15 @@ export function isFeatureAllowed(
 
 /**
  * Détermine si un modèle de CV est payant (Pro).
- * - Un modèle est payant s'il est configuré payant par l'admin.
- * - S'il n'est pas dans la liste des modèles gratuits.
+ * - Tous les modèles intégrés sont payants par défaut.
+ * - Seuls les modèles créés par l'admin sont gratuits.
  */
 export function isTemplatePaid(templateId: string): boolean {
   if (!isPaymentActive()) return false;
 
-  const config = getAdminPaidMatrixConfig();
   const activeFreeTemplateIds = getFreeTemplateIds();
 
-  // If the admin has defined paidTemplates, this is the single source of truth.
-  if (config && Array.isArray(config.paidTemplates)) {
-    return config.paidTemplates.includes(templateId);
-  }
-
-  // Fallback to the default free set and any admin-created models.
+  // Un modèle est payant s'il n'est PAS dans la liste des modèles créés par l'admin
   return !activeFreeTemplateIds.includes(templateId);
 }
 

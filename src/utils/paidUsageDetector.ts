@@ -34,14 +34,24 @@ export function detectPaidFeaturesInCV(cv: CV, userTier: SubscriptionTier | stri
   const template = CV_TEMPLATES.find(t => t.id === cv.templateId);
   const preset = cv.templateId ? TEMPLATE_PRESETS[cv.templateId] : undefined;
 
+  // Check if using an admin-created free template
+  const isAdminFreeTemplate = template?.badgeText === 'Admin' && template?.requiredTier === 'freemium';
+
   // 1. Check Template ID (Admin configuration, non-free template, or contains an element marked paid by admin)
-  if (cv.templateId && isTemplatePaid(cv.templateId)) {
+  // Skip this check if using an admin-created free template
+  if (cv.templateId && isTemplatePaid(cv.templateId) && !isAdminFreeTemplate) {
     paidUsages.push({
       id: 'template_paid',
       name: 'Modèle Pro / Payant',
       description: `Vous utilisez le modèle réservé "${cv.templateId}".`,
       requiredTier: 'classique'
     });
+  }
+
+  // If using an admin-created free template, skip all other paid feature checks
+  // The template itself is free, so its default features are allowed
+  if (isAdminFreeTemplate) {
+    return [];
   }
 
   // 2. Check Column layout / Template menu

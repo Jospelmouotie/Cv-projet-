@@ -3707,7 +3707,7 @@ export const UnifiedCVCanvas: React.FC<UnifiedCVCanvasProps> = ({
 
   // Customizable Footer Renderer & Mandatory Freemium Branding
   const renderCustomFooter = (currentPage: number = 1, totalPagesCount: number = 1) => {
-    const isFreemiumUser = effectiveTier === 'freemium' && cv.statutPaiement !== 'PAYE';
+    const isFreemiumUser = cv.statutPaiement !== 'PAYE'; // Tous les CV non payés affichent la mention
     const showCustom = cv.afficherPiedDePage === true || Boolean(cv.textePiedDePage);
 
     if (!showCustom && !isFreemiumUser) {
@@ -3782,7 +3782,7 @@ export const UnifiedCVCanvas: React.FC<UnifiedCVCanvasProps> = ({
         )}
         {isFreemiumUser && (
           <div className="w-full pt-1 pb-0.5 text-center text-[8.5px] font-medium tracking-wide text-slate-600 dark:text-slate-400 select-none print:text-slate-700">
-            <span>CV fait sur <span className="underline font-bold text-slate-700 dark:text-slate-300">moncvgratuit.com</span></span>
+            <span>Fait avec <span className="underline font-bold text-slate-700 dark:text-slate-300">MyCVBuilder</span></span>
           </div>
         )}
       </div>

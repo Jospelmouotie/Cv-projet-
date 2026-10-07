@@ -115,23 +115,24 @@ GEMINI_API_KEY=AIzaSy_VOTRE_CLE_API_GEMINI_RECUPEREE
 # =============================================================
 # 4. IKEEPAY PAYMENT GATEWAY
 # =============================================================
-IKEEPAY_PUBLIC_KEY=ik_pub_votre_cle_publique
-IKEEPAY_PRIVATE_KEY=ik_priv_votre_cle_privee
-IKEEPAY_WEBHOOK_SECRET=ik_whsec_votre_secret_webhook
+IKEEPAY_PUBLIC_KEY=your_public_key_here
+IKEEPAY_PRIVATE_KEY=your_private_key_here
+IKEEPAY_WEBHOOK_SECRET=your_webhook_secret_here
 
 # =============================================================
 # 5. INITIAL ADMIN ACCOUNT BOOTSTRAP
 # =============================================================
-ADMIN_INITIAL_EMAIL=admin@moncvpro.com
-ADMIN_INITIAL_PASSWORD=AdminPasswordSecured123!
+# REMOVED - Use npm run create-admin command instead
+# ADMIN_INITIAL_EMAIL=
+# ADMIN_INITIAL_PASSWORD=
 
 # =============================================================
 # 6. SMTP EMAIL DISPATCH (OPTIONNEL MAIS RECOMMANDÉ)
 # =============================================================
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=465
-SMTP_USER=contact@moncvpro.com
-SMTP_PASS=votre_mot_de_passe_application_google
+SMTP_USER=your_smtp_user@example.com
+SMTP_PASS=your_smtp_password_here
 SMTP_SECURE=true
 ```
 
@@ -214,7 +215,20 @@ npm install
 npm run db:push
 ```
 
-### 3. Démarrage du Serveur de Développement Local
+### 3. Création du Compte Administrateur
+Pour des raisons de sécurité, l'administrateur n'est plus créé automatiquement. Utilisez la commande interactive :
+
+```bash
+npm run create-admin
+```
+
+Le script vous demandera :
+- Email de l'administrateur
+- Nom complet
+- Mot de passe (min 8 caractères)
+- Confirmation du mot de passe
+
+### 4. Démarrage du Serveur de Développement Local
 ```bash
 npm run dev
 ```
@@ -222,9 +236,7 @@ npm run dev
 L'application est maintenant accessible sur :
 👉 **`http://localhost:3000`**
 
-- Un compte Administrateur par défaut est automatiquement créé lors du premier lancement si configuré dans le `.env` :
-  - E-mail : `admin@moncvpro.com`
-  - Mot de passe : la valeur de `ADMIN_INITIAL_PASSWORD`.
+Connectez-vous avec les identifiants administrateur créés via la commande `npm run create-admin`.
 
 ---
 
@@ -282,6 +294,19 @@ sudo certbot --nginx -d votre-domaine.com -d www.votre-domaine.com
 ---
 
 ## 9. 🔐 Administration & Maintenance du SaaS
+
+### Création d'un Compte Administrateur
+Pour des raisons de sécurité, la création d'administrateur se fait uniquement via la commande interactive :
+
+```bash
+npm run create-admin
+```
+
+Cette commande :
+- Valide l'email et le mot de passe (min 8 caractères)
+- Vérifie que l'email n'existe pas déjà
+- Crée un compte avec le rôle ADMIN et abonnement Premium (10 ans)
+- Hash le mot de passe avec bcrypt (12 rounds)
 
 ### Accès au Panneau d'Administration
 Connectez-vous avec les identifiants Administrateur et ouvrez le panneau d'administration via la barre de navigation ou l'URL `/admin`.
@@ -346,4 +371,6 @@ node restore_all_data.cjs
 | `HTTP 429 Too Many Requests` sur l'API Gemini | Dépassement du quota de requêtes par minute de la clé Google Gemini. | Vérifier la facturation Google Cloud et ajuster les limites dans Google AI Studio. |
 | Signature Webhook iKeePay Invalide | Le secret de webhook dans `.env` ne correspond pas à celui d'iKeePay. | Recopier `IKEEPAY_WEBHOOK_SECRET` depuis le portail marchand iKeePay. |
 | Le filigrane apparaît sur les exports PDF | Élément DOM non masqué lors du clone Canvas. | Vérifier que la classe `watermark-overlay` ou l'attribut `data-watermark="true"` est présent sur l'élément. |
+| Pas de compte administrateur disponible | La création automatique via `.env` a été supprimée pour des raisons de sécurité. | Utiliser la commande `npm run create-admin` pour créer un compte administrateur de manière sécurisée. |
+| Erreur SMTP TLS | La configuration TLS désactive la vérification du certificat. | Vérifier que votre serveur SMTP utilise un certificat SSL valide. Le code utilise maintenant `rejectUnauthorized: true` par défaut. |
 

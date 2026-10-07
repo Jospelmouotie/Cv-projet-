@@ -105,3 +105,24 @@ export const passwordResets = pgTable('password_resets', {
   expiresAt: timestamp('expires_at').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
+
+// Admin Custom Templates table
+export const adminTemplates = pgTable('admin_templates', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  category: text('category').notNull(),
+  description: jsonb('description').notNull(),
+  layoutType: text('layout_type').notNull(),
+  layoutFamily: text('layout_family').notNull(),
+  defaultAccent: text('default_accent').notNull(),
+  defaultSecondaryAccent: text('default_secondary_accent').notNull(),
+  defaultFont: text('default_font').notNull(),
+  badgeText: text('badge_text').notNull(),
+  previewImage: text('preview_image').notNull(),
+  preview: text('preview').notNull(),
+  requiredTier: text('required_tier').notNull(),
+  themeConfig: jsonb('theme_config').notNull(),
+  createdBy: text('created_by').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});

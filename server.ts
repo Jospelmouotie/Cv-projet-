@@ -56,12 +56,15 @@ app.use(cors({
 // HTTP Security Headers
 const isDev = process.env.NODE_ENV !== 'production';
 
+// Generate nonce for CSP
+const generateNonce = () => crypto.randomBytes(16).toString('base64');
+
 app.use(helmet({
   contentSecurityPolicy: isDev ? false : {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
-      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      scriptSrc: ["'self'", "'unsafe-eval'"],
+      styleSrc: ["'self'", "https://fonts.googleapis.com"],
       fontSrc: ["'self'", "https://fonts.gstatic.com", "data:"],
       imgSrc: ["'self'", "data:", "blob:", "https://*"],
       connectSrc: ["'self'", "https://api.ikeepay.com", "https://*.googleapis.com", "https://*.firebaseio.com"],
@@ -87,7 +90,7 @@ const IKEEPAY_PUBLIC_KEY = process.env.IKEEPAY_PUBLIC_KEY || '';
 const IKEEPAY_PRIVATE_KEY = process.env.IKEEPAY_PRIVATE_KEY || '';
 const IKEEPAY_WEBHOOK_SECRET = process.env.IKEEPAY_WEBHOOK_SECRET || '';
 
-app.use(express.json({ limit: '25mb' }));
+app.use(express.json({ limit: '2mb' }));
 
 // Rate Limiters
 const authLimiter = rateLimit({
@@ -291,28 +294,6 @@ function loadDB(): DB {
         }
       }
 
-      const adminEmail = (process.env.ADMIN_INITIAL_EMAIL || '').toLowerCase().trim();
-      const adminPassword = process.env.ADMIN_INITIAL_PASSWORD;
-
-      if (adminEmail && adminPassword) {
-        const existingAdmin = parsedDB.users.find(u => u.email.toLowerCase().trim() === adminEmail);
-        if (!existingAdmin) {
-          const adminPassHash = bcrypt.hashSync(adminPassword, 12);
-          parsedDB.users.push({
-            id: `u-admin-${Date.now()}`,
-            nom: 'Administrateur Principal',
-            email: adminEmail,
-            motDePasseHash: adminPassHash,
-            role: 'ADMIN',
-            langue: 'fr',
-            subscriptionTier: 'premium',
-            subscriptionExpiresAt: new Date(Date.now() + 3650 * 24 * 60 * 60 * 1000).toISOString(),
-            createdAt: new Date().toISOString()
-          });
-          needsSave = true;
-        }
-      }
-
       if (needsSave) {
         saveDB(parsedDB);
       }
@@ -341,22 +322,6 @@ function loadDB(): DB {
     payments: [],
     letters: []
   };
-
-  const adminEmail = (process.env.ADMIN_INITIAL_EMAIL || '').toLowerCase().trim();
-  const adminPassword = process.env.ADMIN_INITIAL_PASSWORD;
-  if (adminEmail && adminPassword) {
-    initialDB.users.push({
-      id: `u-admin-${Date.now()}`,
-      nom: 'Administrateur Principal',
-      email: adminEmail,
-      motDePasseHash: bcrypt.hashSync(adminPassword, 12),
-      role: 'ADMIN',
-      langue: 'fr',
-      subscriptionTier: 'premium',
-      subscriptionExpiresAt: new Date(Date.now() + 3650 * 24 * 60 * 60 * 1000).toISOString(),
-      createdAt: new Date().toISOString()
-    });
-  }
 
   saveDB(initialDB);
   return initialDB;
@@ -1096,24 +1061,6 @@ app.post('/api/auth/session', async (req, res) => {
         langue: selectedLangue
       });
 
-      // Automatically create the initial default CV directly in the database for this user
-      const initialPreset = getPresetForTemplate('modele-1', selectedLangue);
-      const cvDataPayload = {
-        ...initialPreset,
-        titre: initialPreset.titre || 'Mon CV Professionnel',
-        templateId: 'modele-1',
-        langue: selectedLangue,
-        statutPaiement: 'PAYE',
-        isArchived: false
-      };
-      await dbAdapter.createCv({
-        userId: user.id,
-        titre: cvDataPayload.titre,
-        templateId: 'modele-1',
-        langue: selectedLangue,
-        cvData: cvDataPayload,
-        statutPaiement: 'PAYE'
-      });
     }
 
     const token = jwt.sign(
@@ -2253,10 +2200,29 @@ function safeTimingEqual(a: string, b: string): boolean {
   return crypto.timingSafeEqual(bufA, bufB);
 }
 
+// HMAC-SHA256 signature verification for webhooks
+function verifyHmacSignature(payload: string, signature: string, secret: string): boolean {
+  const hmac = crypto.createHmac('sha256', secret);
+  hmac.update(payload);
+  const expectedSignature = hmac.digest('hex');
+  return crypto.timingSafeEqual(
+    Buffer.from(signature),
+    Buffer.from(expectedSignature)
+  );
+}
+
 app.post('/api/payment/ikeepay-webhook', async (req, res) => {
   const signatureHeader = (req.headers['x-ikeepay-signature'] || req.headers['x-webhook-secret']) as string;
-  if (!IKEEPAY_WEBHOOK_SECRET || !signatureHeader || !safeTimingEqual(signatureHeader, IKEEPAY_WEBHOOK_SECRET)) {
-    return res.status(401).json({ error: 'Signature ou secret de webhook non configuré ou invalide.' });
+  const payload = JSON.stringify(req.body);
+
+  if (!IKEEPAY_WEBHOOK_SECRET || !signatureHeader) {
+    return res.status(401).json({ error: 'Secret de webhook non configuré.' });
+  }
+
+  // Verify HMAC-SHA256 signature
+  const isValidSignature = verifyHmacSignature(payload, signatureHeader, IKEEPAY_WEBHOOK_SECRET);
+  if (!isValidSignature) {
+    return res.status(401).json({ error: 'Signature webhook invalide.' });
   }
 
   const { reference, status } = req.body;
@@ -2628,6 +2594,63 @@ app.post('/api/admin/paiement/:id/rejeter', authenticateToken, requireAdmin, asy
 
   await dbAdapter.updatePaymentStatus(id, 'REJETE', noteAdmin || 'Refusé par l\'administrateur');
   res.json({ payment: { ...payment, statut: 'REJETE', noteAdmin } });
+});
+
+// -------------------------------------------------------------
+// ADMIN CUSTOM TEMPLATES ENDPOINTS
+// -------------------------------------------------------------
+app.get('/api/admin/templates', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const templates = await dbAdapter.getAdminTemplates();
+    res.json({ templates });
+  } catch (err) {
+    console.error('Error fetching admin templates:', err);
+    res.status(500).json({ error: 'Erreur lors de la récupération des modèles admin.' });
+  }
+});
+
+app.post('/api/admin/templates', authenticateToken, requireAdmin, async (req: AuthRequest, res) => {
+  try {
+    const template = req.body;
+    const now = new Date().toISOString();
+    
+    const newTemplate = {
+      id: template.id || `custom-admin-${Date.now()}`,
+      name: template.name,
+      category: template.category,
+      description: JSON.stringify(template.description),
+      layoutType: template.layoutType,
+      layoutFamily: template.layoutFamily,
+      defaultAccent: template.defaultAccent,
+      defaultSecondaryAccent: template.defaultSecondaryAccent,
+      defaultFont: template.defaultFont,
+      badgeText: template.badgeText || 'Admin',
+      previewImage: template.previewImage,
+      preview: template.preview,
+      requiredTier: template.requiredTier || 'freemium',
+      themeConfig: JSON.stringify(template.themeConfig),
+      createdBy: req.user.id,
+      createdAt: now,
+      updatedAt: now
+    };
+
+    await dbAdapter.createAdminTemplate(newTemplate);
+    res.json({ success: true, template: newTemplate });
+  } catch (err) {
+    console.error('Error creating admin template:', err);
+    res.status(500).json({ error: 'Erreur lors de la création du modèle admin.' });
+  }
+});
+
+app.delete('/api/admin/templates/:id', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    await dbAdapter.deleteAdminTemplate(id);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Error deleting admin template:', err);
+    res.status(500).json({ error: 'Erreur lors de la suppression du modèle admin.' });
+  }
 });
 
 // -------------------------------------------------------------
@@ -3347,40 +3370,16 @@ RÈGLES ABSOLUES ET IMPÉRATIVES :
 // -------------------------------------------------------------
 // VITE INTEGRATION & SERVER STARTUP
 // -------------------------------------------------------------
-async function initializeAdminAccountIfNeeded() {
-  const adminEmail = (process.env.ADMIN_INITIAL_EMAIL || '').toLowerCase().trim();
-  const adminPassword = process.env.ADMIN_INITIAL_PASSWORD;
-  if (adminEmail && adminPassword) {
-    try {
-      const existingUser = await dbAdapter.findUserByEmail(adminEmail);
-      if (!existingUser) {
-        const hash = bcrypt.hashSync(adminPassword, 12);
-        await dbAdapter.createUser({
-          id: `u-admin-${Date.now()}`,
-          nom: 'Administrateur Principal',
-          email: adminEmail,
-          motDePasseHash: hash,
-          role: 'ADMIN',
-          subscriptionTier: 'premium',
-          langue: 'fr'
-        });
-        console.log(`[SECURITY INIT] Compte administrateur initialisé pour ${adminEmail}`);
-      }
-    } catch (err) {
-      console.error('[SECURITY INIT ERROR]', err);
-    }
-  }
-}
-
 async function startServer() {
   loadDB(); // Boot DB check
+  await dbAdapter.ensurePostgresReadiness();
   try {
     await dbAdapter.syncAllSqliteUsersToPostgres();
   } catch (err) {
     console.warn('Initial sync SQLite users to PostgreSQL notice:', err);
   }
 
-  await initializeAdminAccountIfNeeded();
+  console.log('[INFO] Pour créer un compte administrateur, utilisez: npm run create-admin');
 
   // Ensure unmatched /api/* calls return JSON 404, never index.html!
   app.all('/api/*', (req, res) => {

@@ -3,6 +3,8 @@ import { toPng } from 'html-to-image';
 import { jsPDF } from 'jspdf';
 import { sanitizeDomColorsForCanvas, replaceOklchInString } from './colorUtils';
 import { exportCVToDocx } from './docxExport';
+import { detectPaidFeaturesInCV } from './paidUsageDetector';
+import { isPaymentActive } from './adminPaidMatrix';
 
 export interface ExportResult {
   success: boolean;
@@ -380,11 +382,29 @@ export async function exportCVToImage(
 export async function exportCVToPDF(
   elementId: string,
   filename: string,
-  isTwoPagesMode: boolean = false
+  isTwoPagesMode: boolean = false,
+  cv?: any
 ): Promise<ExportResult> {
   const element = document.getElementById(elementId);
   if (!element) {
     return { success: false, message: `Élément avec l'ID ${elementId} introuvable.` };
+  }
+
+  // Check if payment is active and if CV has paid features without payment
+  if (isPaymentActive() && cv) {
+    const userTier = cv.subscriptionTier || 'freemium';
+    const userRole = cv.role || 'USER';
+    const isExempt = userRole === 'ADMIN' || userTier === 'premium' || userTier === 'classique' || userTier === 'decouverte';
+    
+    if (!isExempt) {
+      const detectedPaidFeatures = detectPaidFeaturesInCV(cv, userTier);
+      if (detectedPaidFeatures.length > 0 && cv.statutPaiement !== 'PAYE') {
+        return {
+          success: false,
+          message: `Ce CV contient ${detectedPaidFeatures.length} fonctionnalité(s) payante(s) : ${detectedPaidFeatures.map(f => f.name).join(', ')}. Veuillez payer pour débloquer l'export PDF.`
+        };
+      }
+    }
   }
 
   try {

@@ -486,7 +486,7 @@ export const EditorView: React.FC<EditorViewProps> = ({
     }));
     setExportNotice({ type: 'success', message: 'Style réinitialisé en version gratuite. Lancement du téléchargement...' });
     setTimeout(() => {
-      exportCVToPDF('cv-preview-container', `${cv.titreCV || 'CV'}.pdf`, cv.pageCibleMode === '2_pages');
+      exportCVToPDF('cv-preview-container', `${cv.titreCV || 'CV'}.pdf`, cv.pageCibleMode === '2_pages', cv);
     }, 500);
   };
 
@@ -521,7 +521,7 @@ export const EditorView: React.FC<EditorViewProps> = ({
 
     setExportNotice({ type: 'loading', message: 'Génération du PDF HD en cours...' });
 
-    const result = await exportCVToPDF('cv-preview-container', `${cv.titreCV || 'CV'}.pdf`, cv.pageCibleMode === '2_pages');
+    const result = await exportCVToPDF('cv-preview-container', `${cv.titreCV || 'CV'}.pdf`, cv.pageCibleMode === '2_pages', cv);
 
     if (result.success) {
       setExportNotice({ type: 'success', message: 'PDF téléchargé avec succès !' });

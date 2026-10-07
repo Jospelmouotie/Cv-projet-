@@ -464,7 +464,7 @@ export const VisualCVEditor: React.FC<VisualCVEditorProps> = ({
         onOpenProfileEditor={() => setShowProfileModal(true)}
         onOpenPresetElementsModal={() => setShowPresetModal(true)}
         onSaveCV={() => onSaveCV(convertDocumentToLegacyCV(document))}
-        onExportPDF={() => exportCVToPDF('cv-preview-container', `${cv.titreCV || cv.titre || 'CV'}.pdf`, cv.pageCibleMode === '2_pages')}
+        onExportPDF={() => exportCVToPDF('cv-preview-container', `${cv.titreCV || cv.titre || 'CV'}.pdf`, cv.pageCibleMode === '2_pages', cv)}
         onPrint={() => printCV('cv-preview-container')}
         onToggleViewMode={onToggleViewMode}
         viewMode={viewMode}

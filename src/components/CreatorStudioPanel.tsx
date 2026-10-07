@@ -6,6 +6,7 @@ import { HeaderProfileModal } from '../editor/HeaderProfileModal';
 import { getTranslation, getLocalizedTemplateName, getLocalizedSectionTitle } from '../i18n/translations';
 import { FREE_TEMPLATE_IDS } from '../utils/subscriptionGates';
 import { isPaymentActive } from '../utils/adminPaidMatrix';
+import { isSubOptionPaidByAdmin, isStudioMenuPaidByAdmin } from '../utils/adminPaidMatrix';
 import {
   Palette,
   Layout,
@@ -35,7 +36,10 @@ import {
   ChevronDown,
   ChevronUp,
   Maximize2,
-  Crown
+  Crown,
+  FileText,
+  Phone,
+  Star
 } from 'lucide-react';
 
 interface CreatorStudioPanelProps {
@@ -139,7 +143,8 @@ export const CreatorStudioPanel: React.FC<CreatorStudioPanelProps> = ({
       return !(isAllowedMenu || isAllowedSubOption);
     }
     if (!isFreemium) return false;
-    return !FREE_STUDIO_MENU_IDS.has(menuId);
+    // Use adminPaidMatrix functions to check if menu/sub-option is paid
+    return isStudioMenuPaidByAdmin(menuId) || (subOptionId && isSubOptionPaidByAdmin(subOptionId, menuId));
   };
 
   // Helper for label rendering with padlock badge
@@ -215,26 +220,15 @@ export const CreatorStudioPanel: React.FC<CreatorStudioPanelProps> = ({
 
   // Helper to update CV root properties
   const updateCvProp = (key: keyof CV, value: any) => {
-    if (isRestrictedCustomTemplate && normTier !== 'admin' && !allowedCustomTemplateFields.has(key)) {
-      setSaveSuccessMsg('Ce modèle est gratuit et limité aux changements de couleur, photo, titres de section et pied de page.');
-      setTimeout(() => setSaveSuccessMsg(null), 2600);
-      return;
-    }
+    // Allow all edits for preview - don't block based on template restrictions
+    // The export will be blocked if paid features are used
     onChangeCV({ ...cv, [key]: value });
   };
 
   // Helper to update a section's custom style
   const updateSectionStyle = (secId: string, patch: any) => {
-    if (isRestrictedCustomTemplate && normTier !== 'admin') {
-      const allowedPatchKeys = ['couleurFond', 'couleurTexte', 'couleurTitre', 'alignementTitre', 'tailleTitre', 'casseTitre', 'styleEntete'];
-      const hasDisallowedPatch = Object.keys(patch).some((key) => !allowedPatchKeys.includes(key));
-      if (hasDisallowedPatch) {
-        setSaveSuccessMsg('Ce modèle personnalisé est limité aux couleurs, aux titres et au pied de page.');
-        setTimeout(() => setSaveSuccessMsg(null), 2600);
-        return;
-      }
-    }
-
+    // Allow all section style edits for preview - don't block based on template restrictions
+    // The export will be blocked if paid features are used
     const updatedSections = cv.sections.map((sec) => {
       if (sec.id !== secId) return sec;
       const currentStyle = sec.styleSection || {};
@@ -644,6 +638,11 @@ export const CreatorStudioPanel: React.FC<CreatorStudioPanelProps> = ({
           <label className="text-xs font-black uppercase tracking-wider flex items-center gap-2 text-black dark:text-white pointer-events-none">
             <Columns className="w-4 h-4 text-black dark:text-white" />
             <span>{isEn ? '4. Column Structure & Layout' : isAr ? '4. هيكل وتنسيق الأعمدة' : '4. Structure & Disposition des Colonnes'}</span>
+            {checkIsLocked('sidebar') && (
+              <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-500 border border-amber-400/50 flex items-center gap-1 ml-auto">
+                <Lock className="w-2.5 h-2.5" /> PRO
+              </span>
+            )}
           </label>
           {openSections.sidebar ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
         </div>
@@ -652,7 +651,11 @@ export const CreatorStudioPanel: React.FC<CreatorStudioPanelProps> = ({
           <div className="space-y-3 pt-1">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1">
-                <span className="text-xs font-bold block">Type d'arrière-plan Sidebar</span>
+                <OptionLabel 
+                  label="Type d'arrière-plan Sidebar"
+                  isLocked={checkIsLocked('sidebar', 'sidebar:bg_type')}
+                  isCurrentlyActiveAndLocked={checkIsLocked('sidebar', 'sidebar:bg_type') && cv.sidebarBackgroundType !== 'solid'}
+                />
                 <select
                   value={cv.sidebarBackgroundType || 'solid'}
                   onChange={(e) => updateCvProp('sidebarBackgroundType', e.target.value)}
@@ -666,7 +669,11 @@ export const CreatorStudioPanel: React.FC<CreatorStudioPanelProps> = ({
               </div>
 
               <div className="space-y-1">
-                <span className="text-xs font-bold block">Forme & Découpe Sidebar</span>
+                <OptionLabel 
+                  label="Forme & Découpe Sidebar"
+                  isLocked={checkIsLocked('sidebar', 'sidebar:shape')}
+                  isCurrentlyActiveAndLocked={checkIsLocked('sidebar', 'sidebar:shape') && cv.formeSidebarDecor !== 'standard'}
+                />
                 <select
                   value={cv.formeSidebarDecor || 'standard'}
                   onChange={(e) => updateCvProp('formeSidebarDecor', e.target.value)}
@@ -683,7 +690,11 @@ export const CreatorStudioPanel: React.FC<CreatorStudioPanelProps> = ({
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-black/10 dark:border-white/10">
               <div className="space-y-1">
-                <span className="text-xs font-bold block">Couleur de fond Sidebar</span>
+                <OptionLabel 
+                  label="Couleur de fond Sidebar"
+                  isLocked={checkIsLocked('sidebar', 'sidebar:bg_color')}
+                  isCurrentlyActiveAndLocked={checkIsLocked('sidebar', 'sidebar:bg_color') && cv.couleurFondSidebar && cv.couleurFondSidebar !== '#0F2744'}
+                />
                 <div className="flex items-center gap-2 bg-neutral-100 dark:bg-neutral-900 p-2 rounded-lg border border-black/10 dark:border-white/10">
                   <input
                     type="color"
@@ -703,7 +714,10 @@ export const CreatorStudioPanel: React.FC<CreatorStudioPanelProps> = ({
 
               {cv.sidebarBackgroundType === 'gradient' ? (
                 <div className="space-y-1">
-                  <span className="text-xs font-bold block">Couleur Fin de Dégradé</span>
+                  <OptionLabel 
+                    label="Couleur Fin de Dégradé"
+                    isLocked={checkIsLocked('sidebar', 'sidebar:bg_color')}
+                  />
                   <div className="flex items-center gap-2 bg-neutral-100 dark:bg-neutral-900 p-2 rounded-lg border border-black/10 dark:border-white/10">
                     <input
                       type="color"
@@ -722,17 +736,21 @@ export const CreatorStudioPanel: React.FC<CreatorStudioPanelProps> = ({
                 </div>
               ) : (
                 <div className="space-y-1">
-                  <span className="text-xs font-bold block">Motif texturé Sidebar</span>
+                  <OptionLabel 
+                    label="Motif texturé Sidebar"
+                    isLocked={checkIsLocked('sidebar', 'sidebar:pattern')}
+                    isCurrentlyActiveAndLocked={checkIsLocked('sidebar', 'sidebar:pattern') && cv.sidebarBackgroundPattern && cv.sidebarBackgroundPattern !== 'none'}
+                  />
                   <select
                     value={cv.sidebarBackgroundPattern || 'none'}
                     onChange={(e) => updateCvProp('sidebarBackgroundPattern', e.target.value)}
                     className="w-full p-2 bg-neutral-100 dark:bg-neutral-900 border border-black/20 dark:border-white/20 rounded-lg text-xs font-bold text-black dark:text-white"
                   >
                     <option value="none">Aucun motif</option>
-                    <option value="dots">Points fins (Dots)</option>
-                    <option value="grid">Grille millimétrée</option>
-                    <option value="lines">Lignes diagonales</option>
-                    <option value="waves">Vagues douces</option>
+                    <option value="dots">Points</option>
+                    <option value="lines">Lignes</option>
+                    <option value="grid">Grille</option>
+                    <option value="zigzag">Zigzag</option>
                   </select>
                 </div>
               )}
@@ -752,7 +770,7 @@ export const CreatorStudioPanel: React.FC<CreatorStudioPanelProps> = ({
                     type="text"
                     value={cv.couleurTexteSidebar || ''}
                     onChange={(e) => updateCvProp('couleurTexteSidebar', e.target.value)}
-                    placeholder="Auto selon contraste"
+                    placeholder="#FFFFFF"
                     className="w-full text-xs font-mono font-bold bg-transparent outline-none"
                   />
                 </div>
@@ -787,6 +805,11 @@ export const CreatorStudioPanel: React.FC<CreatorStudioPanelProps> = ({
           <label className="text-xs font-black uppercase tracking-wider flex items-center gap-2 text-black dark:text-white pointer-events-none">
             <CircleDot className="w-4 h-4 text-black dark:text-white" />
             <span>{isEn ? '12. Chronological Timeline' : isAr ? '12. الخط الزمني للخبرات' : '12. Frise Chronologique / Timeline'}</span>
+            {checkIsLocked('timeline') && (
+              <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-500 border border-amber-400/50 flex items-center gap-1 ml-auto">
+                <Lock className="w-2.5 h-2.5" /> PRO
+              </span>
+            )}
           </label>
           {openSections.timeline ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
         </div>
@@ -795,21 +818,35 @@ export const CreatorStudioPanel: React.FC<CreatorStudioPanelProps> = ({
           <div className="space-y-3 pt-1">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1">
-                <span className="text-xs font-bold block">Style de ligne temporelle</span>
+                <OptionLabel 
+                  label="Style de ligne temporelle"
+                  isLocked={checkIsLocked('timeline', 'timeline:line-dots')}
+                  isCurrentlyActiveAndLocked={checkIsLocked('timeline', 'timeline:line-dots') && cv.timelineStyle && cv.timelineStyle !== 'none'}
+                />
                 <select
                   value={cv.timelineStyle || 'none'}
                   onChange={(e) => updateCvProp('timelineStyle', e.target.value)}
                   className="w-full p-2 bg-neutral-100 dark:bg-neutral-900 border border-black/20 dark:border-white/20 rounded-lg text-xs font-bold text-black dark:text-white"
                 >
                   <option value="none">Aucune ligne (Standard)</option>
-                  <option value="line-dots">Ligne continue avec pastilles reliées</option>
-                  <option value="left-bar">Barre latérale d'accentuation</option>
-                  <option value="accent-pills">Capsules / Pills d'étiquettes</option>
+                  <option value="line-dots" className={checkIsLocked('timeline', 'timeline:line-dots') ? 'text-purple-600' : ''}>
+                    {checkIsLocked('timeline', 'timeline:line-dots') ? '🔒 ' : ''}Ligne continue avec pastilles reliées
+                  </option>
+                  <option value="left-bar" className={checkIsLocked('timeline', 'timeline:left-bar') ? 'text-purple-600' : ''}>
+                    {checkIsLocked('timeline', 'timeline:left-bar') ? '🔒 ' : ''}Barre latérale d'accentuation
+                  </option>
+                  <option value="accent-pills" className={checkIsLocked('timeline', 'timeline:accent-pills') ? 'text-purple-600' : ''}>
+                    {checkIsLocked('timeline', 'timeline:accent-pills') ? '🔒 ' : ''}Capsules / Pills d'étiquettes
+                  </option>
                 </select>
               </div>
 
               <div className="space-y-1">
-                <span className="text-xs font-bold block">Disposition et Alignement des Dates</span>
+                <OptionLabel 
+                  label="Disposition et Alignement des Dates"
+                  isLocked={checkIsLocked('timeline', 'timeline:accent-pills')}
+                  isCurrentlyActiveAndLocked={checkIsLocked('timeline', 'timeline:accent-pills') && cv.alignementDatesExperience && cv.alignementDatesExperience !== 'left'}
+                />
                 <select
                   value={cv.alignementDatesExperience || 'left'}
                   onChange={(e) => {
@@ -864,8 +901,13 @@ export const CreatorStudioPanel: React.FC<CreatorStudioPanelProps> = ({
           className="flex items-center justify-between cursor-pointer select-none"
         >
           <label className="text-xs font-black uppercase tracking-wider flex items-center gap-2 text-black dark:text-white pointer-events-none">
-            <List className="w-4 h-4 text-black dark:text-white" />
-            <span>{isEn ? '10. List Bullet Points & Numbering' : isAr ? '10. نقاط القوائم والترقيم' : '10. Puces de Liste & Numérotation'}</span>
+            <AlignLeft className="w-4 h-4 text-black dark:text-white" />
+            <span>{isEn ? '6. Section Header Styles' : isAr ? '6. أنماط رؤوس الأقسام' : '6. Styles d\'En-Tête de Section'}</span>
+            {checkIsLocked('sectionHeaders') && (
+              <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-500 border border-amber-400/50 flex items-center gap-1 ml-auto">
+                <Lock className="w-2.5 h-2.5" /> PRO
+              </span>
+            )}
           </label>
           {openSections.bullets ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
         </div>
@@ -873,7 +915,11 @@ export const CreatorStudioPanel: React.FC<CreatorStudioPanelProps> = ({
         {openSections.bullets && (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
             <div className="space-y-1">
-              <span className="text-xs font-bold block">Forme des puces de description</span>
+              <OptionLabel 
+                label="Forme des puces de description"
+                isLocked={checkIsLocked('bullets', 'bullets:square')}
+                isCurrentlyActiveAndLocked={checkIsLocked('bullets', 'bullets:square') && cv.stylePucesListes && cv.stylePucesListes !== 'disc'}
+              />
               <select
                 value={cv.stylePucesListes || cv.bulletStyle || 'disc'}
                 onChange={(e) => {
@@ -883,12 +929,22 @@ export const CreatorStudioPanel: React.FC<CreatorStudioPanelProps> = ({
                 className="w-full p-2 bg-neutral-100 dark:bg-neutral-900 border border-black/20 dark:border-white/20 rounded-lg text-xs font-bold text-black dark:text-white"
               >
                 <option value="disc">• Disque rond classique</option>
-                <option value="square">■ Carré plein géométrique</option>
-                <option value="arrow">▸ Flèche d'action moderne</option>
-                <option value="check">✓ Coche de validation</option>
-                <option value="star">★ Étoile d'impact</option>
+                <option value="square" className={checkIsLocked('bullets', 'bullets:square') ? 'text-purple-600' : ''}>
+                  {checkIsLocked('bullets', 'bullets:square') ? '🔒 ' : ''}■ Carré plein géométrique
+                </option>
+                <option value="arrow" className={checkIsLocked('bullets', 'bullets:arrow') ? 'text-purple-600' : ''}>
+                  {checkIsLocked('bullets', 'bullets:arrow') ? '🔒 ' : ''}▸ Flèche d'action moderne
+                </option>
+                <option value="check" className={checkIsLocked('bullets', 'bullets:check') ? 'text-purple-600' : ''}>
+                  {checkIsLocked('bullets', 'bullets:check') ? '🔒 ' : ''}✓ Coche de validation
+                </option>
+                <option value="star" className={checkIsLocked('bullets', 'bullets:star') ? 'text-purple-600' : ''}>
+                  {checkIsLocked('bullets', 'bullets:star') ? '🔒 ' : ''}★ Étoile d'impact
+                </option>
                 <option value="dash">— Tiret discret</option>
-                <option value="numeric">1. 2. 3. Numéroté</option>
+                <option value="numbered" className={checkIsLocked('bullets', 'bullets:numbered') ? 'text-purple-600' : ''}>
+                  {checkIsLocked('bullets', 'bullets:numbered') ? '🔒 ' : ''}1. 2. 3. Numéroté
+                </option>
                 <option value="none">Sans puce (Texte direct)</option>
               </select>
             </div>
@@ -930,6 +986,11 @@ export const CreatorStudioPanel: React.FC<CreatorStudioPanelProps> = ({
           <label className="text-xs font-black uppercase tracking-wider flex items-center gap-2 text-black dark:text-white pointer-events-none">
             <Layout className="w-4 h-4 text-black dark:text-white" />
             <span>{isEn ? '2. Main CV Header (Name, Title, Style)' : isAr ? '2. الترويسة الرئيسية (الاسم، العنوان، النمط)' : '2. En-tête Principal du CV (Nom, Titre, Style)'}</span>
+            {checkIsLocked('header') && (
+              <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-500 border border-amber-400/50 flex items-center gap-1 ml-auto">
+                <Lock className="w-2.5 h-2.5" /> PRO
+              </span>
+            )}
           </label>
           {openSections.header ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
         </div>
@@ -938,7 +999,11 @@ export const CreatorStudioPanel: React.FC<CreatorStudioPanelProps> = ({
           <div className="space-y-3 pt-1">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1">
-                <span className="text-xs font-bold block">Format & Découpe du bandeau</span>
+                <OptionLabel 
+                  label="Format & Découpe du bandeau"
+                  isLocked={checkIsLocked('header', 'header:style')}
+                  isCurrentlyActiveAndLocked={checkIsLocked('header', 'header:style') && cv.styleEnTete && cv.styleEnTete !== 'banner'}
+                />
                 <select
                   value={cv.styleEnTete || 'banner'}
                   onChange={(e) => updateCvProp('styleEnTete', e.target.value)}
@@ -979,8 +1044,12 @@ export const CreatorStudioPanel: React.FC<CreatorStudioPanelProps> = ({
               </div>
 
               <div className="space-y-1">
+                <OptionLabel 
+                  label="Hauteur du bandeau d'en-tête"
+                  isLocked={checkIsLocked('header', 'header:height')}
+                  isCurrentlyActiveAndLocked={checkIsLocked('header', 'header:height') && cv.hauteurEnTete && cv.hauteurEnTete !== 120}
+                />
                 <div className="flex justify-between text-xs font-bold">
-                  <span>Hauteur du bandeau d'en-tête</span>
                   <span>{cv.hauteurEnTete || cv.hauteurEnTetePx || 120}px</span>
                 </div>
                 <input
@@ -1000,7 +1069,11 @@ export const CreatorStudioPanel: React.FC<CreatorStudioPanelProps> = ({
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-black/10 dark:border-white/10">
               <div className="space-y-1">
-                <span className="text-xs font-bold block">Mode d'affichage du Grand Titre</span>
+                <OptionLabel 
+                  label="Mode d'affichage du Grand Titre"
+                  isLocked={checkIsLocked('header', 'header:title_color')}
+                  isCurrentlyActiveAndLocked={checkIsLocked('header', 'header:title_color') && cv.grandTitreMode && cv.grandTitreMode !== 'nom'}
+                />
                 <select
                   value={cv.grandTitreMode || 'nom'}
                   onChange={(e) => updateCvProp('grandTitreMode', e.target.value)}
@@ -1014,7 +1087,10 @@ export const CreatorStudioPanel: React.FC<CreatorStudioPanelProps> = ({
 
               {cv.grandTitreMode === 'surmesure' && (
                 <div className="space-y-1">
-                  <span className="text-xs font-bold block">Texte du Grand Titre sur-mesure</span>
+                  <OptionLabel 
+                    label="Texte du Grand Titre sur-mesure"
+                    isLocked={checkIsLocked('header', 'header:title_color')}
+                  />
                   <input
                     type="text"
                     value={cv.grandTitreTexte || ''}
@@ -1069,14 +1145,18 @@ export const CreatorStudioPanel: React.FC<CreatorStudioPanelProps> = ({
 
             {/* Granular Multi-Color Header Colors Control */}
             <div className="pt-3 border-t border-black/10 dark:border-white/10 space-y-3">
-              <span className="text-xs font-extrabold block text-black dark:text-white flex items-center gap-1.5">
-                <Palette className="w-3.5 h-3.5 text-blue-500" />
-                <span>Personnalisation des Couleurs de l'En-tête Multi-Couleurs</span>
-              </span>
+              <OptionLabel 
+                label="Personnalisation des Couleurs de l'En-tête Multi-Couleurs"
+                isLocked={checkIsLocked('header', 'header:bg_color')}
+              />
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                 {/* Header Bg Color 1 */}
                 <div className="space-y-1">
-                  <span className="text-[11px] font-bold block text-neutral-700 dark:text-neutral-300">Couleur de Fond 1 (Bloc Principal)</span>
+                  <OptionLabel 
+                    label="Couleur de Fond 1 (Bloc Principal)"
+                    isLocked={checkIsLocked('header', 'header:bg_color')}
+                    isCurrentlyActiveAndLocked={checkIsLocked('header', 'header:bg_color') && cv.couleurHeader1 && cv.couleurHeader1 !== '#0A2540'}
+                  />
                   <div className="flex items-center gap-2 bg-neutral-100 dark:bg-neutral-900 p-1.5 rounded-lg border border-black/10 dark:border-white/10">
                     <input
                       type="color"
@@ -1102,7 +1182,11 @@ export const CreatorStudioPanel: React.FC<CreatorStudioPanelProps> = ({
 
                 {/* Header Secondary Color 2 */}
                 <div className="space-y-1">
-                  <span className="text-[11px] font-bold block text-neutral-700 dark:text-neutral-300">Couleur Secondaire (Bloc 2 / Split)</span>
+                  <OptionLabel 
+                    label="Couleur Secondaire (Bloc 2 / Split)"
+                    isLocked={checkIsLocked('header', 'header:bg_color')}
+                    isCurrentlyActiveAndLocked={checkIsLocked('header', 'header:bg_color') && cv.couleurHeader2 && cv.couleurHeader2 !== '#F59E0B'}
+                  />
                   <div className="flex items-center gap-2 bg-neutral-100 dark:bg-neutral-900 p-1.5 rounded-lg border border-black/10 dark:border-white/10">
                     <input
                       type="color"
@@ -1128,7 +1212,11 @@ export const CreatorStudioPanel: React.FC<CreatorStudioPanelProps> = ({
 
                 {/* Header Accent Highlight 3 */}
                 <div className="space-y-1">
-                  <span className="text-[11px] font-bold block text-neutral-700 dark:text-neutral-300">Couleur Ligne / Surbrillance</span>
+                  <OptionLabel 
+                    label="Couleur Ligne / Surbrillance"
+                    isLocked={checkIsLocked('header', 'header:bg_color')}
+                    isCurrentlyActiveAndLocked={checkIsLocked('header', 'header:bg_color') && cv.couleurHeader3 && cv.couleurHeader3 !== '#38BDF8'}
+                  />
                   <div className="flex items-center gap-2 bg-neutral-100 dark:bg-neutral-900 p-1.5 rounded-lg border border-black/10 dark:border-white/10">
                     <input
                       type="color"
@@ -1230,7 +1318,11 @@ export const CreatorStudioPanel: React.FC<CreatorStudioPanelProps> = ({
             {/* Selection Forme / Type de Vague */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1">
-                <span className="text-xs font-bold block">Style & Forme des Vagues</span>
+                <OptionLabel 
+                  label="Style & Forme des Vagues"
+                  isLocked={checkIsLocked('background', 'background:decorative_layers')}
+                  isCurrentlyActiveAndLocked={checkIsLocked('background', 'background:decorative_layers') && cv.typeVague && cv.typeVague !== 'wave-cut'}
+                />
                 <select
                   value={cv.typeVague || cv.formeSidebarDecor || 'wave-cut'}
                   onChange={(e) => {
@@ -1240,16 +1332,29 @@ export const CreatorStudioPanel: React.FC<CreatorStudioPanelProps> = ({
                   className="w-full p-2 bg-neutral-100 dark:bg-neutral-900 border border-black/20 dark:border-white/20 rounded-lg text-xs font-bold text-black dark:text-white"
                 >
                   <option value="wave-cut">🌊 Ondulation Incurvée Fluid Flow</option>
-                  <option value="wave-double">🌊🌊 Vagues Doubles Superposées</option>
-                  <option value="diagonal-cut">📐 Découpe Biseautée Diagonale</option>
-                  <option value="arch-top">🏛️ Arche / Dôme Architecte</option>
-                  <option value="hex-grid">⬡ Grille Hexagones High-Tech</option>
-                  <option value="minimal-lines">⚡ Lignes Épurées Néo-Minimales</option>
+                  <option value="wave-double" className={checkIsLocked('background', 'background:decorative_layers') ? 'text-purple-600' : ''}>
+                    {checkIsLocked('background', 'background:decorative_layers') ? '🔒 ' : ''}🌊🌊 Vagues Doubles Superposées
+                  </option>
+                  <option value="diagonal-cut" className={checkIsLocked('background', 'background:decorative_layers') ? 'text-purple-600' : ''}>
+                    {checkIsLocked('background', 'background:decorative_layers') ? '🔒 ' : ''}📐 Découpe Biseautée Diagonale
+                  </option>
+                  <option value="arch-top" className={checkIsLocked('background', 'background:decorative_layers') ? 'text-purple-600' : ''}>
+                    {checkIsLocked('background', 'background:decorative_layers') ? '🔒 ' : ''}🏛️ Arche / Dôme Architecte
+                  </option>
+                  <option value="hex-grid" className={checkIsLocked('background', 'background:decorative_layers') ? 'text-purple-600' : ''}>
+                    {checkIsLocked('background', 'background:decorative_layers') ? '🔒 ' : ''}⬡ Grille Hexagones High-Tech
+                  </option>
+                  <option value="minimal-lines" className={checkIsLocked('background', 'background:decorative_layers') ? 'text-purple-600' : ''}>
+                    {checkIsLocked('background', 'background:decorative_layers') ? '🔒 ' : ''}⚡ Lignes Épurées Néo-Minimales
+                  </option>
                 </select>
               </div>
 
               <div className="space-y-1">
-                <span className="text-xs font-bold block">Position des Vagues sur la Page</span>
+                <OptionLabel 
+                  label="Position des Vagues sur la Page"
+                  isLocked={checkIsLocked('background', 'background:decorative_layers')}
+                />
                 <select
                   value={cv.positionVagues || 'sidebar'}
                   onChange={(e) => updateCvProp('positionVagues', e.target.value)}
@@ -1465,8 +1570,13 @@ export const CreatorStudioPanel: React.FC<CreatorStudioPanelProps> = ({
           className="flex items-center justify-between cursor-pointer select-none"
         >
           <label className="text-xs font-black uppercase tracking-wider flex items-center gap-2 text-black dark:text-white pointer-events-none">
-            <User className="w-4 h-4 text-black dark:text-white" />
-            <span>{isEn ? '1. Profile Photo, Frame, Rings & Background' : isAr ? '1. صورة الملف الشخصي والإطار والخلفية' : '1. Photo de Profil, Cadre, Anneaux & Fond'}</span>
+            <Box className="w-4 h-4 text-black dark:text-white" />
+            <span>{isEn ? '14. Shadows & Depth Effects' : isAr ? '14. الظلال وتأثيرات العمق' : '14. Effets d\'Ombres & Profondeur'}</span>
+            {checkIsLocked('shadows') && (
+              <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-500 border border-amber-400/50 flex items-center gap-1 ml-auto">
+                <Lock className="w-2.5 h-2.5" /> PRO
+              </span>
+            )}
           </label>
           {openSections.photo ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
         </div>
@@ -1492,32 +1602,56 @@ export const CreatorStudioPanel: React.FC<CreatorStudioPanelProps> = ({
               <>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-black/10 dark:border-white/10">
                   <div className="space-y-1">
-                    <span className="text-xs font-bold block">Découpe & Forme de la photo</span>
+                    <OptionLabel 
+                      label="Découpe & Forme de la photo"
+                      isLocked={checkIsLocked('photo', 'photo:shapes')}
+                      isCurrentlyActiveAndLocked={checkIsLocked('photo', 'photo:shapes') && cv.photoForme && cv.photoForme !== 'ronde'}
+                    />
                     <select
                       value={cv.photoForme || 'ronde'}
                       onChange={(e) => updateCvProp('photoForme', e.target.value)}
                       className="w-full p-2 bg-neutral-100 dark:bg-neutral-900 border border-black/20 dark:border-white/20 rounded-lg text-xs font-bold text-black dark:text-white"
                     >
                       <option value="ronde">Ronde classique (Cercle)</option>
-                      <option value="carree">Carré net géométrique</option>
-                      <option value="arrondie">Coins arrondis (Squircle)</option>
-                      <option value="arche">Arche élégante supérieure</option>
-                      <option value="hexagone">Hexagone contemporain</option>
-                      <option value="galet">Galet Designer asymétrique</option>
+                      <option value="carree" className={checkIsLocked('photo', 'photo:shapes') ? 'text-purple-600' : ''}>
+                        {checkIsLocked('photo', 'photo:shapes') ? '🔒 ' : ''}Carré net géométrique
+                      </option>
+                      <option value="arrondie" className={checkIsLocked('photo', 'photo:shapes') ? 'text-purple-600' : ''}>
+                        {checkIsLocked('photo', 'photo:shapes') ? '🔒 ' : ''}Coins arrondis (Squircle)
+                      </option>
+                      <option value="arche" className={checkIsLocked('photo', 'photo:shapes') ? 'text-purple-600' : ''}>
+                        {checkIsLocked('photo', 'photo:shapes') ? '🔒 ' : ''}Arche élégante supérieure
+                      </option>
+                      <option value="hexagone" className={checkIsLocked('photo', 'photo:shapes') ? 'text-purple-600' : ''}>
+                        {checkIsLocked('photo', 'photo:shapes') ? '🔒 ' : ''}Hexagone contemporain
+                      </option>
+                      <option value="galet" className={checkIsLocked('photo', 'photo:shapes') ? 'text-purple-600' : ''}>
+                        {checkIsLocked('photo', 'photo:shapes') ? '🔒 ' : ''}Galet Designer asymétrique
+                      </option>
                     </select>
                   </div>
 
                   <div className="space-y-1">
-                    <span className="text-xs font-bold block">Anneau Décoratif Photo</span>
+                    <OptionLabel 
+                      label="Anneau Décoratif Photo"
+                      isLocked={checkIsLocked('photo', 'photo:rings')}
+                      isCurrentlyActiveAndLocked={checkIsLocked('photo', 'photo:rings') && cv.cadrePhotoRing && cv.cadrePhotoRing !== 'none'}
+                    />
                     <select
                       value={cv.cadrePhotoRing || 'none'}
                       onChange={(e) => updateCvProp('cadrePhotoRing', e.target.value)}
                       className="w-full p-2 bg-neutral-100 dark:bg-neutral-900 border border-black/20 dark:border-white/20 rounded-lg text-xs font-bold text-black dark:text-white"
                     >
                       <option value="none">Simple bordure (Standard)</option>
-                      <option value="double-ring">Double anneau stylisé</option>
-                      <option value="gold-ring">Anneau Prestige Doré</option>
-                      <option value="border-only">Bordure fine épurée</option>
+                      <option value="double-ring" className={checkIsLocked('photo', 'photo:rings') ? 'text-purple-600' : ''}>
+                        {checkIsLocked('photo', 'photo:rings') ? '🔒 ' : ''}Double anneau stylisé
+                      </option>
+                      <option value="gold-ring" className={checkIsLocked('photo', 'photo:rings') ? 'text-purple-600' : ''}>
+                        {checkIsLocked('photo', 'photo:rings') ? '🔒 ' : ''}Anneau Prestige Doré
+                      </option>
+                      <option value="border-only" className={checkIsLocked('photo', 'photo:rings') ? 'text-purple-600' : ''}>
+                        {checkIsLocked('photo', 'photo:rings') ? '🔒 ' : ''}Bordure fine épurée
+                      </option>
                     </select>
                   </div>
                 </div>
@@ -1612,6 +1746,11 @@ export const CreatorStudioPanel: React.FC<CreatorStudioPanelProps> = ({
           <label className="text-xs font-black uppercase tracking-wider flex items-center gap-2 text-black dark:text-white pointer-events-none">
             <Contact className="w-4 h-4 text-black dark:text-white" />
             <span>{isEn ? '8. Contact Badges & Coordinate Styling' : isAr ? '8. شارات الاتصال وتزيين البيانات' : '8. Badges de Contact & Décorations de Coordonnées'}</span>
+            {checkIsLocked('contactBadges') && (
+              <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-500 border border-amber-400/50 flex items-center gap-1 ml-auto">
+                <Lock className="w-2.5 h-2.5" /> PRO
+              </span>
+            )}
           </label>
           {openSections.contactBadges ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
         </div>
@@ -1684,8 +1823,13 @@ export const CreatorStudioPanel: React.FC<CreatorStudioPanelProps> = ({
           className="flex items-center justify-between cursor-pointer select-none"
         >
           <label className="text-xs font-black uppercase tracking-wider flex items-center gap-2 text-black dark:text-white pointer-events-none">
-            <Frame className="w-4 h-4 text-black dark:text-white" />
-            <span>{isEn ? '9. Page Calibration, Margins & Line Spacing' : isAr ? '9. معايرة الصفحة، الهوامش والتباعد' : '9. Calibrage de Page, Marges & Interlignes'}</span>
+            <Sparkles className="w-4 h-4 text-black dark:text-white" />
+            <span>{isEn ? '9. Page Calibration & Margins' : isAr ? '9. معايرة الصفحة والهوامش' : '9. Calibration & Marges de Page'}</span>
+            {checkIsLocked('pageCalibration') && (
+              <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-500 border border-amber-400/50 flex items-center gap-1 ml-auto">
+                <Lock className="w-2.5 h-2.5" /> PRO
+              </span>
+            )}
           </label>
           {openSections.pageCalibration ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
         </div>
@@ -1777,6 +1921,11 @@ export const CreatorStudioPanel: React.FC<CreatorStudioPanelProps> = ({
           <label className="text-xs font-black uppercase tracking-wider flex items-center gap-2 text-black dark:text-white pointer-events-none">
             <Palette className="w-4 h-4 text-black dark:text-white" />
             <span>{isEn ? '10. Global Page Background & Color Palette' : isAr ? '10. الخلفية العامة ولوحة الألوان' : '10. Arrière-Plan Global & Palette de Couleurs'}</span>
+            {checkIsLocked('background') && (
+              <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-500 border border-amber-400/50 flex items-center gap-1 ml-auto">
+                <Lock className="w-2.5 h-2.5" /> PRO
+              </span>
+            )}
           </label>
           {openSections.background ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
         </div>
@@ -1785,7 +1934,11 @@ export const CreatorStudioPanel: React.FC<CreatorStudioPanelProps> = ({
           <div className="space-y-3 pt-1">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1">
-                <span className="text-xs font-bold block">Couleur d'accent principale</span>
+                <OptionLabel 
+                  label="Couleur d'accent principale"
+                  isLocked={checkIsLocked('background', 'background:bg_color')}
+                  isCurrentlyActiveAndLocked={checkIsLocked('background', 'background:bg_color') && cv.couleurAccent && cv.couleurAccent !== '#18181B'}
+                />
                 <div className="flex items-center gap-2 bg-neutral-100 dark:bg-neutral-900 p-2 rounded-lg border border-black/10 dark:border-white/10">
                   <input
                     type="color"
@@ -1803,7 +1956,11 @@ export const CreatorStudioPanel: React.FC<CreatorStudioPanelProps> = ({
               </div>
 
               <div className="space-y-1">
-                <span className="text-xs font-bold block">Arrière-plan global de page</span>
+                <OptionLabel 
+                  label="Arrière-plan global de page"
+                  isLocked={checkIsLocked('background', 'background:bg_color')}
+                  isCurrentlyActiveAndLocked={checkIsLocked('background', 'background:bg_color') && cv.couleurFond && cv.couleurFond !== '#FFFFFF'}
+                />
                 <div className="flex items-center gap-2 bg-neutral-100 dark:bg-neutral-900 p-2 rounded-lg border border-black/10 dark:border-white/10">
                   <input
                     type="color"
@@ -1822,7 +1979,11 @@ export const CreatorStudioPanel: React.FC<CreatorStudioPanelProps> = ({
             </div>
 
             <div className="pt-2 border-t border-black/10 dark:border-white/10 space-y-1">
-              <span className="text-xs font-bold block">Motif d'arrière-plan texturé</span>
+              <OptionLabel 
+                label="Motif d'arrière-plan texturé"
+                isLocked={checkIsLocked('background', 'background:patterns')}
+                isCurrentlyActiveAndLocked={checkIsLocked('background', 'background:patterns') && cv.arrierePlanPattern && cv.arrierePlanPattern !== 'none'}
+              />
               <select
                 value={cv.arrierePlanPattern || cv.backgroundPattern || 'none'}
                 onChange={(e) => {
@@ -1832,10 +1993,18 @@ export const CreatorStudioPanel: React.FC<CreatorStudioPanelProps> = ({
                 className="w-full p-2 bg-neutral-100 dark:bg-neutral-900 border border-black/20 dark:border-white/20 rounded-lg text-xs font-bold text-black dark:text-white"
               >
                 <option value="none">Aucun motif (Uni classique)</option>
-                <option value="dots">Points fins (Dots Grid)</option>
-                <option value="grid">Quadrillage millimétré (Grid)</option>
-                <option value="lines">Lignes diagonales (Stripes)</option>
-                <option value="waves">Vagues modernes (Waves)</option>
+                <option value="dots" className={checkIsLocked('background', 'background:patterns') ? 'text-purple-600' : ''}>
+                  {checkIsLocked('background', 'background:patterns') ? '🔒 ' : ''}Points fins (Dots Grid)
+                </option>
+                <option value="grid" className={checkIsLocked('background', 'background:patterns') ? 'text-purple-600' : ''}>
+                  {checkIsLocked('background', 'background:patterns') ? '🔒 ' : ''}Quadrillage millimétré (Grid)
+                </option>
+                <option value="lines" className={checkIsLocked('background', 'background:patterns') ? 'text-purple-600' : ''}>
+                  {checkIsLocked('background', 'background:patterns') ? '🔒 ' : ''}Lignes diagonales (Stripes)
+                </option>
+                <option value="waves" className={checkIsLocked('background', 'background:patterns') ? 'text-purple-600' : ''}>
+                  {checkIsLocked('background', 'background:patterns') ? '🔒 ' : ''}Vagues modernes (Waves)
+                </option>
               </select>
             </div>
           </div>
@@ -1850,7 +2019,12 @@ export const CreatorStudioPanel: React.FC<CreatorStudioPanelProps> = ({
         >
           <label className="text-xs font-black uppercase tracking-wider flex items-center gap-2 text-black dark:text-white pointer-events-none">
             <Type className="w-4 h-4 text-black dark:text-white" />
-            <span>{isEn ? '11. Typography & Font Sizes' : isAr ? '11. الخطوط وأحجام الخط' : '11. Typographies Gratuites & Tailles de Police'}</span>
+            <span>{isEn ? '11. Typography & Fonts (100% Free)' : isAr ? '11. الطباعة والخطوط (مجانية بالكامل)' : '11. Typographies 100% Gratuites'}</span>
+            {checkIsLocked('typography') && (
+              <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-500 border border-amber-400/50 flex items-center gap-1 ml-auto">
+                <Lock className="w-2.5 h-2.5" /> PRO
+              </span>
+            )}
           </label>
           {openSections.typography ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
         </div>
@@ -1964,7 +2138,11 @@ export const CreatorStudioPanel: React.FC<CreatorStudioPanelProps> = ({
               </div>
 
               <div className="space-y-1.5">
-                <span className="text-xs font-bold block">Casse des titres</span>
+                <OptionLabel 
+                  label="Casse des titres"
+                  isLocked={checkIsLocked('titlesCase', 'titlesCase:case')}
+                  isCurrentlyActiveAndLocked={checkIsLocked('titlesCase', 'titlesCase:case') && cv.casseTitreSection && cv.casseTitreSection !== 'uppercase'}
+                />
                 <select
                   value={cv.casseTitreSection || cv.casseTitresSection || 'uppercase'}
                   onChange={(e) => {
@@ -1974,8 +2152,12 @@ export const CreatorStudioPanel: React.FC<CreatorStudioPanelProps> = ({
                   className="w-full p-2 bg-neutral-100 dark:bg-neutral-900 border border-black/20 dark:border-white/20 rounded-lg text-xs font-bold text-black dark:text-white"
                 >
                   <option value="uppercase">MAJUSCULES (Ex: EXPÉRIENCES)</option>
-                  <option value="capitalize">Titre Propre (Ex: Expériences Pro)</option>
-                  <option value="normal">Minuscules standard</option>
+                  <option value="capitalize" className={checkIsLocked('titlesCase', 'titlesCase:case') ? 'text-purple-600' : ''}>
+                    {checkIsLocked('titlesCase', 'titlesCase:case') ? '🔒 ' : ''}Titre Propre (Ex: Expériences Pro)
+                  </option>
+                  <option value="normal" className={checkIsLocked('titlesCase', 'titlesCase:case') ? 'text-purple-600' : ''}>
+                    {checkIsLocked('titlesCase', 'titlesCase:case') ? '🔒 ' : ''}Minuscules standard
+                  </option>
                 </select>
               </div>
             </div>
@@ -2130,6 +2312,11 @@ export const CreatorStudioPanel: React.FC<CreatorStudioPanelProps> = ({
           <label className="text-xs font-black uppercase tracking-wider flex items-center gap-2 text-black dark:text-white pointer-events-none">
             <Box className="w-4 h-4 text-black dark:text-white" />
             <span>{isEn ? '13. Shadows & Depth Effects' : isAr ? '13. الظلال وتأثيرات العمق' : '13. Ombres Portées & Effets de Profondeur'}</span>
+            {checkIsLocked('shadows') && (
+              <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-500 border border-amber-400/50 flex items-center gap-1 ml-auto">
+                <Lock className="w-2.5 h-2.5" /> PRO
+              </span>
+            )}
           </label>
           {openSections.shadows ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
         </div>
@@ -2137,7 +2324,11 @@ export const CreatorStudioPanel: React.FC<CreatorStudioPanelProps> = ({
         {openSections.shadows && (
           <div className="space-y-3 pt-1">
             <div className="space-y-1">
-              <span className="text-xs font-bold block">Ombre des cartes & blocs de section</span>
+              <OptionLabel 
+                label="Ombre des cartes & blocs de section"
+                isLocked={checkIsLocked('shadows', 'shadows:sm')}
+                isCurrentlyActiveAndLocked={checkIsLocked('shadows', 'shadows:sm') && cv.ombre && cv.ombre !== 'none'}
+              />
               <select
                 value={cv.ombre || cv.ombreCarte || 'none'}
                 onChange={(e) => {
@@ -2154,8 +2345,12 @@ export const CreatorStudioPanel: React.FC<CreatorStudioPanelProps> = ({
             </div>
 
             <div className="space-y-1 pt-2 border-t border-black/10 dark:border-white/10">
+              <OptionLabel 
+                label="Épaisseur de bordure des cartes"
+                isLocked={checkIsLocked('shadows', 'shadows:md')}
+                isCurrentlyActiveAndLocked={checkIsLocked('shadows', 'shadows:md') && cv.epaisseurBordure && cv.epaisseurBordure !== 0}
+              />
               <div className="flex justify-between text-xs font-bold">
-                <span>Épaisseur de bordure des cartes</span>
                 <span>{cv.epaisseurBordure || 0}px</span>
               </div>
               <input
@@ -2179,8 +2374,13 @@ export const CreatorStudioPanel: React.FC<CreatorStudioPanelProps> = ({
           className="flex items-center justify-between cursor-pointer select-none"
         >
           <label className="text-xs font-black uppercase tracking-wider flex items-center gap-2 text-black dark:text-white pointer-events-none">
-            <SlidersHorizontal className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-            <span>{isEn ? '18. General Footer & Bottom Margin' : isAr ? '18. التذييل العام وهامش الصفحة' : '18. Pied de Page Général & Marche Anti-Chevauchement'}</span>
+            <FileText className="w-4 h-4 text-black dark:text-white" />
+            <span>{isEn ? '14. Footer & Protection Margin' : isAr ? '14. التذييل وهامش الحماية' : '14. Pied de Page & Marge Anti-Chevauchement'}</span>
+            {checkIsLocked('footer') && (
+              <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-500 border border-amber-400/50 flex items-center gap-1 ml-auto">
+                <Lock className="w-2.5 h-2.5" /> PRO
+              </span>
+            )}
           </label>
           {openSections.footer ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
         </div>
@@ -2235,7 +2435,11 @@ export const CreatorStudioPanel: React.FC<CreatorStudioPanelProps> = ({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
               {/* Style du pied de page */}
               <div className="space-y-1">
-                <span className="text-xs font-bold block">Style visuel</span>
+                <OptionLabel 
+                  label="Style visuel"
+                  isLocked={checkIsLocked('footer', 'footer:style')}
+                  isCurrentlyActiveAndLocked={checkIsLocked('footer', 'footer:style') && cv.stylePiedDePage && cv.stylePiedDePage !== 'top-line'}
+                />
                 <select
                   value={cv.stylePiedDePage || 'top-line'}
                   onChange={(e) => updateCvProp('stylePiedDePage', e.target.value)}
@@ -2251,7 +2455,10 @@ export const CreatorStudioPanel: React.FC<CreatorStudioPanelProps> = ({
 
               {/* Alignement */}
               <div className="space-y-1">
-                <span className="text-xs font-bold block">Alignement des éléments</span>
+                <OptionLabel 
+                  label="Alignement des éléments"
+                  isLocked={checkIsLocked('footer', 'footer:style')}
+                />
                 <select
                   value={cv.alignementPiedDePage || 'between'}
                   onChange={(e) => updateCvProp('alignementPiedDePage', e.target.value)}
@@ -2278,7 +2485,11 @@ export const CreatorStudioPanel: React.FC<CreatorStudioPanelProps> = ({
               </div>
 
               <div className="space-y-1">
-                <span className="text-xs font-bold block">Couleur du texte du pied de page</span>
+                <OptionLabel 
+                  label="Couleur du texte du pied de page"
+                  isLocked={checkIsLocked('footer', 'footer:text_color')}
+                  isCurrentlyActiveAndLocked={checkIsLocked('footer', 'footer:text_color') && cv.couleurTextePiedDePage && cv.couleurTextePiedDePage !== '#64748B'}
+                />
                 <div className="flex items-center gap-2 bg-neutral-100 dark:bg-neutral-900 p-1.5 rounded-lg border border-black/10 dark:border-white/10">
                   <input
                     type="color"
@@ -2308,6 +2519,11 @@ export const CreatorStudioPanel: React.FC<CreatorStudioPanelProps> = ({
           <label className="text-xs font-black uppercase tracking-wider flex items-center gap-2 text-black dark:text-white pointer-events-none">
             <Contact className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
             <span>{isEn ? '17. Contact Footer Banner & Templates' : isAr ? '17. شريط تذييل بيانات الاتصال' : '17. Bandeau Footer de Contact (Coordonnées & Modèles)'}</span>
+            {checkIsLocked('footerContact') && (
+              <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-500 border border-amber-400/50 flex items-center gap-1 ml-auto">
+                <Lock className="w-2.5 h-2.5" /> PRO
+              </span>
+            )}
           </label>
           {openSections.footerContact ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
         </div>
@@ -2525,8 +2741,13 @@ export const CreatorStudioPanel: React.FC<CreatorStudioPanelProps> = ({
           className="flex items-center justify-between cursor-pointer select-none"
         >
           <label className="text-xs font-black uppercase tracking-wider flex items-center gap-2 text-black dark:text-white pointer-events-none">
-            <GraduationCap className="w-4 h-4 text-black dark:text-white" />
-            <span>{isEn ? '7. Education & Degrees Customization' : isAr ? '7. تخصيص المؤهلات والشهادات' : '17. Personnalisation des Formations & Diplômes'}</span>
+            <Briefcase className="w-4 h-4 text-black dark:text-white" />
+            <span>{isEn ? '17. Professional Experiences' : isAr ? '17. الخبرات المهنية' : '17. Expériences Professionnelles'}</span>
+            {checkIsLocked('experiences') && (
+              <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-500 border border-amber-400/50 flex items-center gap-1 ml-auto">
+                <Lock className="w-2.5 h-2.5" /> PRO
+              </span>
+            )}
           </label>
           {openSections.formations ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
         </div>

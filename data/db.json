@@ -1,0 +1,66 @@
+{
+  "appSettings": {
+    "paiementActif": true,
+    "pricingPlans": [
+      {
+        "id": "plan-decouverte",
+        "code": "decouverte",
+        "nom": "Pack Découverte",
+        "prix": 1000,
+        "prixUsd": 1.7,
+        "devise": "FCFA",
+        "dureeJours": 7,
+        "description": "Accès illimité aux 59+ modèles HD et au Creator Studio pendant 7 jours",
+        "actif": true
+      },
+      {
+        "id": "plan-classique",
+        "code": "classique",
+        "nom": "Pack Classique",
+        "prix": 2500,
+        "prixUsd": 4.2,
+        "devise": "FCFA",
+        "dureeJours": 30,
+        "description": "Accès illimité aux 59+ modèles HD et traducteur 3 langues pendant 1 mois",
+        "actif": true
+      },
+      {
+        "id": "plan-premium",
+        "code": "premium",
+        "nom": "Pack Premium VIP",
+        "prix": 5000,
+        "prixUsd": 8.5,
+        "devise": "FCFA",
+        "dureeJours": 30,
+        "description": "Suite IA complète : Ciblage offres, Lettres de motivation, Profil LinkedIn pendant 1 mois",
+        "actif": true
+      }
+    ]
+  },
+  "users": [
+    {
+      "id": "u-demo-1",
+      "nom": "Jean Dupont",
+      "email": "jean.dupont@exemple.com",
+      "motDePasseHash": "$2b$10$4eyJAGQe4Beh2jr26OLc6u//NMqoud7gGoNhpNxpuu83uPAxwhYDS",
+      "role": "USER",
+      "langue": "fr",
+      "subscriptionTier": "freemium",
+      "createdAt": "2026-10-05T10:33:53.048Z"
+    },
+    {
+      "id": "u-admin-1791199295738",
+      "nom": "Administrateur Principal",
+      "email": "mouotiejospel@gmail.com",
+      "motDePasseHash": "$2b$12$AyKtY1VrS42i6qQGDnsXkeLRJw.B6tVAuyIqGnXYy0WSdly74HPta",
+      "role": "ADMIN",
+      "langue": "fr",
+      "subscriptionTier": "premium",
+      "subscriptionExpiresAt": "2036-10-02T11:21:35.738Z",
+      "createdAt": "2026-10-05T11:21:35.738Z"
+    }
+  ],
+  "cvs": [],
+  "payments": [],
+  "letters": []
+}

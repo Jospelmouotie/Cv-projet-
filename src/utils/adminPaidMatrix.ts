@@ -7,7 +7,7 @@ export interface StudioMenuDefinition {
   subOptions: { id: string; label: string }[];
 }
 
-export const STUDIO_17_MENUS: StudioMenuDefinition[] = [
+export const STUDIO_18_MENUS: StudioMenuDefinition[] = [
   {
     id: 'template',
     number: 1,
@@ -214,6 +214,17 @@ export const STUDIO_17_MENUS: StudioMenuDefinition[] = [
       { id: 'individualSection:title_color', label: 'Couleur Titre Dédiée par Section' },
       { id: 'individualSection:borders', label: 'Bordures et Rayons par Section' }
     ]
+  },
+  {
+    id: 'footer',
+    number: 18,
+    label: 'Pied de Page & Footer Contact',
+    description: 'Style du pied de page, couleur de fond et coordonnées de contact',
+    subOptions: [
+      { id: 'footer:style', label: 'Style du Pied de Page' },
+      { id: 'footer:bg_color', label: 'Couleur de Fond du Footer' },
+      { id: 'footer:text_color', label: 'Couleur du Texte du Footer' }
+    ]
   }
 ];
 
@@ -255,18 +266,107 @@ const ALL_STUDIO_MENU_IDS = [
   'footerContact'
 ];
 
-const FREE_STUDIO_MENU_IDS = ['template', 'timeline', 'sectionHeaders', 'footer'];
+const FREE_STUDIO_MENU_IDS = ['template', 'timeline'];
 
 export const DEFAULT_ADMIN_PAID_MATRIX: AdminPaidMatrixConfig = {
-  paidFonts: ['Playfair Display', 'Cinzel', 'Syne', 'Bebas Neue'],
-  paidTemplates: CV_TEMPLATES.map((template) => template.id),
-  paidStudioTabs: ['calques', 'espacements', 'bordures', 'style-sections', 'arriere-plan'],
-  paidPatterns: ['mesh', 'waves', 'hexagons', 'polka', 'chevrons', 'circuit', 'cubes', 'mandala'],
-  paidHeaderStyles: ['luxury-gold', 'tech-arches', 'arc-contour', 'organic-arch', 'ocean-wave'],
-  paidExportFormats: ['pdf_hd', 'docx', 'json', 'txt'],
-  paidFeatures: ['COVER_LETTER_AI', 'CV_AI_JOB_TARGETING', 'LINKEDIN_OPTIMIZER', 'CUSTOM_SECTIONS'],
-  paidStudioMenus: ALL_STUDIO_MENU_IDS.filter(id => !FREE_STUDIO_MENU_IDS.includes(id)),
-  paidSubOptions: ['background:decorative_layers', 'sectionHeaders:arch-block', 'photo:rings']
+  paidTemplates: [], // Les modèles sont gérés individuellement
+  paidStudioTabs: [], // Les onglets studio sont gérés individuellement
+  paidFonts: [], // Les polices sont gratuites
+  paidPatterns: [], // Les motifs sont gratuits
+  paidHeaderStyles: [], // Les styles d'en-tête sont gratuits
+  paidExportFormats: [], // Les formats d'export sont gérés par la logique de paiement
+  paidFeatures: [], // Les fonctionnalités sont gérées individuellement
+  paidStudioMenus: [
+    'sidebar', // Personnalisation sidebar payante
+    'header', // Style en-tête payant
+    'sectionHeaders', // Styles d'en-tête de section payants
+    'typography', // Typographie payante
+    'titlesCase', // Casse et alignement des titres payant
+    'background', // Arrière-plan payant
+    'photo', // Photo payante
+    'contactBadges', // Badges contact payants
+    'bullets', // Puces payantes
+    'shadows', // Ombres payantes
+    'skills', // Compétences payantes
+    'pageCalibration', // Marges page payantes
+    'experiences', // Expériences payantes
+    'formations', // Formations payantes
+    'individualSection', // Style individuel par section payant
+    'footer', // Pied de page payant
+    'footerContact' // Footer contact payant
+  ],
+  paidSubOptions: [
+    'sidebar:bg_type',
+    'sidebar:shape',
+    'sidebar:bg_color',
+    'sidebar:text_color',
+    'sidebar:pattern',
+    'header:style',
+    'header:height',
+    'header:bg_color',
+    'header:title_color',
+    'header:subtitle_color',
+    'sectionHeaders:underline',
+    'sectionHeaders:banner',
+    'sectionHeaders:arch-block',
+    'sectionHeaders:boxed',
+    'sectionHeaders:badge-header',
+    'sectionHeaders:stars',
+    'sectionHeaders:double-line',
+    'sectionHeaders:left-border',
+    'sectionHeaders:icon-inline',
+    'sectionHeaders:font_size',
+    'sectionHeaders:color',
+    'typography:fonts',
+    'typography:text_size',
+    'typography:heading_size',
+    'typography:line_height',
+    'titlesCase:alignment',
+    'titlesCase:case',
+    'background:bg_type',
+    'background:patterns',
+    'background:decorative_layers',
+    'photo:shapes',
+    'photo:rings',
+    'contactBadges:soft-tint',
+    'contactBadges:solid-accent',
+    'contactBadges:outline',
+    'contactBadges:pill',
+    'contactBadges:glass',
+    'timeline:line-dots',
+    'timeline:accent-pills',
+    'timeline:left-bar',
+    'bullets:square',
+    'bullets:arrow',
+    'bullets:check',
+    'bullets:star',
+    'bullets:numbered',
+    'shadows:sm',
+    'shadows:md',
+    'shadows:lg',
+    'pageCalibration:margin',
+    'pageCalibration:section_gap',
+    'pageCalibration:item_gap',
+    'experiences:dates_alignment',
+    'experiences:company_style',
+    'formations:dates_alignment',
+    'formations:diploma_style',
+    'skills:badges',
+    'skills:progress',
+    'skills:stars',
+    'skills:tags',
+    'skills:circular-progress',
+    'skills:badges-multicolor',
+    'skills:tech-cards',
+    'skills:icon-card-grid',
+    'individualSection:bg_color',
+    'individualSection:text_color',
+    'individualSection:title_color',
+    'individualSection:borders',
+    'footer:style',
+    'footer:bg_color',
+    'footer:text_color'
+  ]
 };
 
 export function isPaymentActive(): boolean {
@@ -275,6 +375,7 @@ export function isPaymentActive(): boolean {
   if (stored !== null) {
     return stored === 'true';
   }
+  // Default to true for payment to be active
   return true;
 }
 
@@ -283,10 +384,15 @@ export function getAdminPaidMatrixConfig(): AdminPaidMatrixConfig {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
       const parsed = JSON.parse(stored);
-      return {
+      // Merge with default to ensure all required fields exist
+      const merged = {
         ...DEFAULT_ADMIN_PAID_MATRIX,
-        ...parsed
+        ...parsed,
+        paidStudioMenus: [...DEFAULT_ADMIN_PAID_MATRIX.paidStudioMenus, ...(parsed.paidStudioMenus || [])]
       };
+      // Remove duplicates
+      merged.paidStudioMenus = [...new Set(merged.paidStudioMenus)];
+      return merged;
     }
   } catch (e) {
     console.error('Failed to load admin paid matrix config:', e);
@@ -335,26 +441,9 @@ export async function syncAdminPaidMatrixFromBackend(): Promise<AdminPaidMatrixC
 }
 
 export function saveAdminPaidMatrixConfig(config: AdminPaidMatrixConfig): void {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
-    window.dispatchEvent(new CustomEvent('admin_paid_matrix_updated', { detail: config }));
-    window.dispatchEvent(new CustomEvent('app_settings_updated'));
-
-    const token = localStorage.getItem('cv_builder_token');
-    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-
-    // Save asynchronously to database
-    fetch('/api/admin/paid-matrix', {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(config)
-    }).catch(err => console.error('Failed to persist admin paid matrix to DB:', err));
-  } catch (e) {
-    console.error('Failed to save admin paid matrix config:', e);
-  }
+  // Désactivé : l'admin ne peut plus configurer les fonctionnalités payantes
+  // Toutes les fonctionnalités sont gratuites par défaut
+  console.warn('Admin paid matrix configuration is disabled. All features are free by default.');
 }
 
 export function isFontPaidByAdmin(fontName: string): boolean {
@@ -364,9 +453,9 @@ export function isFontPaidByAdmin(fontName: string): boolean {
 }
 
 export function isTemplatePaidByAdmin(templateId: string): boolean {
-  if (!isPaymentActive()) return false;
-  const config = getAdminPaidMatrixConfig();
-  return config.paidTemplates.includes(templateId);
+  // La logique de paiement des modèles est gérée par subscriptionGates.ts
+  // Seuls les modèles créés par l'admin sont gratuits
+  return false;
 }
 
 export function isStudioTabPaidByAdmin(tabId: string): boolean {
@@ -377,12 +466,16 @@ export function isStudioTabPaidByAdmin(tabId: string): boolean {
 
 export function isStudioMenuPaidByAdmin(menuId: string): boolean {
   if (!isPaymentActive()) return false;
+  // Always allow the 4 free menus for freemium users
+  if (FREE_STUDIO_MENU_IDS.includes(menuId)) return false;
   const config = getAdminPaidMatrixConfig();
   return config.paidStudioMenus.includes(menuId);
 }
 
 export function isSubOptionPaidByAdmin(subOptionId: string, parentMenuId?: string): boolean {
   if (!isPaymentActive()) return false;
+  // Always allow sub-options of free menus for freemium users
+  if (parentMenuId && FREE_STUDIO_MENU_IDS.includes(parentMenuId)) return false;
   const config = getAdminPaidMatrixConfig();
   if (config.paidSubOptions.includes(subOptionId)) return true;
   if (parentMenuId && config.paidStudioMenus.includes(parentMenuId)) return true;

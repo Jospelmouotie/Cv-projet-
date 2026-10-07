@@ -133,6 +133,29 @@ function initTables(db: DatabaseSync) {
     );
   `);
 
+  // 6. Admin Custom Templates Table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS admin_templates (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      category TEXT NOT NULL,
+      description TEXT NOT NULL,
+      layoutType TEXT NOT NULL,
+      layoutFamily TEXT NOT NULL,
+      defaultAccent TEXT NOT NULL,
+      defaultSecondaryAccent TEXT NOT NULL,
+      defaultFont TEXT NOT NULL,
+      badgeText TEXT NOT NULL,
+      previewImage TEXT NOT NULL,
+      preview TEXT NOT NULL,
+      requiredTier TEXT NOT NULL,
+      themeConfig TEXT NOT NULL,
+      createdBy TEXT NOT NULL,
+      createdAt TEXT NOT NULL,
+      updatedAt TEXT NOT NULL
+    );
+  `);
+
   // 6. Password Resets Table
   db.exec(`
     CREATE TABLE IF NOT EXISTS password_resets (
@@ -297,22 +320,8 @@ function migrateLegacyJsonData(db: DatabaseSync) {
       }
     }
 
-    // Seed admin user ONLY if ADMIN_INITIAL_EMAIL and ADMIN_INITIAL_PASSWORD env vars are set
-    const adminEmail = (process.env.ADMIN_INITIAL_EMAIL || '').toLowerCase().trim();
-    const adminPassword = process.env.ADMIN_INITIAL_PASSWORD;
-
-    if (adminEmail && adminPassword) {
-      const adminCheck = db.prepare('SELECT id FROM users WHERE email = ?').get(adminEmail);
-      if (!adminCheck) {
-        const adminHash = bcrypt.hashSync(adminPassword, 12);
-        const now = new Date().toISOString();
-        db.prepare(`
-          INSERT INTO users (id, nom, email, motDePasseHash, role, subscriptionTier, langue, createdAt, updatedAt)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `).run(`u-admin-${Date.now()}`, 'Administrateur Principal', adminEmail, adminHash, 'ADMIN', 'premium', 'fr', now, now);
-        console.log(`[SQLITE BOOTSTRAP] Compte admin initialisé avec succès pour ${adminEmail}`);
-      }
-    }
+    // REMOVED: Auto-creation of admin from .env for security reasons
+    // Use npm run create-admin command instead
 
     // Ensure default app_settings row exists
     const settingsCheck = db.prepare('SELECT key FROM app_settings WHERE key = ?').get('global_config');

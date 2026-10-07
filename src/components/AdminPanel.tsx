@@ -283,8 +283,42 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ langue, onRefresh, onCre
     } as const;
 
     const updated = [...readAdminCustomTemplates(), nextTemplate as any];
-    syncAdminCustomTemplates(updated);
-    setCustomTemplates(updated);
+    
+    // Save to backend API
+    const token = localStorage.getItem('cv_builder_token');
+    if (token) {
+      fetch('/api/admin/templates', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(nextTemplate)
+      }).then(res => {
+        if (res.ok) {
+          return res.json();
+        }
+        throw new Error('Failed to save template');
+      }).then(data => {
+        // Refresh templates from backend
+        fetch('/api/admin/templates', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        }).then(res => res.json()).then(data => {
+          if (Array.isArray(data.templates)) {
+            localStorage.setItem('admin_custom_templates', JSON.stringify(data.templates));
+            setCustomTemplates(data.templates);
+          }
+        });
+      }).catch(err => {
+        console.error('Failed to save template to backend:', err);
+        // Fallback to localStorage
+        syncAdminCustomTemplates(updated);
+        setCustomTemplates(updated);
+      });
+    } else {
+      syncAdminCustomTemplates(updated);
+      setCustomTemplates(updated);
+    }
     setCustomTemplateForm({
       name: 'Modèle admin',
       category: 'professionnel',

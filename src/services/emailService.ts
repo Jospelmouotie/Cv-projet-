@@ -1,5 +1,15 @@
 import nodemailer from 'nodemailer';
 
+// Simple HTML escape function to prevent XSS in emails
+function escapeHtml(unsafe: string): string {
+  return unsafe
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 export interface EmailOptions {
   to: string | string[];
   subject: string;
@@ -34,9 +44,6 @@ export function getEmailTransporter(): nodemailer.Transporter | null {
       auth: {
         user: smtpUser,
         pass: smtpPass
-      },
-      tls: {
-        rejectUnauthorized: false
       }
     });
 
@@ -163,8 +170,9 @@ export async function sendEmailSafe(options: EmailOptions): Promise<boolean> {
  */
 export async function sendWelcomeEmail(userEmail: string, userName: string, appUrl: string = 'https://mycvbuilder.com'): Promise<boolean> {
   const title = 'Bienvenue sur MyCV Builder !';
+  const safeUserName = escapeHtml(userName || 'Cher Candidat');
   const contentHtml = `
-    <h2 style="color: #1e293b; font-size: 18px; margin-top: 0;">Bonjour ${userName || 'Cher Candidat'},</h2>
+    <h2 style="color: #1e293b; font-size: 18px; margin-top: 0;">Bonjour ${safeUserName},</h2>
     <p>Nous sommes ravis de vous compter parmi les créateurs de <strong>MyCV Builder</strong> ! Votre compte a été créé avec succès.</p>
     <p>Vous avez désormais accès à nos outils d'élite pour décrocher vos futurs entretiens :</p>
     <ul style="padding-left: 20px; line-height: 1.8;">
@@ -223,8 +231,9 @@ export async function sendSubscriptionConfirmationEmail({
   });
 
   const title = `Abonnement ${planName.toUpperCase()} Activé !`;
+  const safeUserName = escapeHtml(userName || '');
   const contentHtml = `
-    <h2 style="color: #1e293b; font-size: 18px; margin-top: 0;">Félicitations ${userName || ''} !</h2>
+    <h2 style="color: #1e293b; font-size: 18px; margin-top: 0;">Félicitations ${safeUserName} !</h2>
     <p>Votre paiement a été validé avec succès. Votre forfait <strong>${planName}</strong> est désormais actif sur votre compte.</p>
     
     <div style="background-color: #f1f5f9; border-radius: 12px; padding: 20px; margin: 20px 0; border-left: 4px solid #3b82f6;">
@@ -276,9 +285,11 @@ export async function sendFeatureUnlockedEmail({
   badge?: string;
   appUrl?: string;
 }): Promise<boolean> {
+  const safeUserName = escapeHtml(userName || '');
+  const safeFeatureMessage = escapeHtml(featureMessage);
   const contentHtml = `
-    <h2 style="color: #1e293b; font-size: 18px; margin-top: 0;">Bonjour ${userName || ''},</h2>
-    <p>${featureMessage}</p>
+    <h2 style="color: #1e293b; font-size: 18px; margin-top: 0;">Bonjour ${safeUserName},</h2>
+    <p>${safeFeatureMessage}</p>
     <p>Profitez-en dès maintenant pour mettre à jour votre CV avec les derniers designs et fonctionnalités débloqués !</p>
   `;
 
@@ -321,15 +332,19 @@ export async function sendAdminPaymentAlert({
   appUrl?: string;
 }): Promise<boolean> {
   const title = 'Nouveau Paiement Reçu / Preuve Déposée';
+  const safeUserName = escapeHtml(userName);
+  const safeUserEmail = escapeHtml(userEmail);
+  const safePlanTier = escapeHtml(planTier.toUpperCase());
+  const safeReference = escapeHtml(reference);
   const contentHtml = `
     <h2 style="color: #1e293b; font-size: 18px; margin-top: 0;">Alerte Administrateur</h2>
     <p>Un utilisateur a initié un paiement ou déposé une preuve de transaction :</p>
     <div style="background-color: #f1f5f9; border-radius: 12px; padding: 20px; margin: 20px 0;">
       <ul style="margin: 0; padding-left: 20px; font-size: 14px; line-height: 1.7;">
-        <li>Client : <strong>${userName}</strong> (${userEmail})</li>
-        <li>Formule demandée : <strong>${planTier.toUpperCase()}</strong></li>
+        <li>Client : <strong>${safeUserName}</strong> (${safeUserEmail})</li>
+        <li>Formule demandée : <strong>${safePlanTier}</strong></li>
         <li>Montant : <strong>${amount} ${currency}</strong></li>
-        <li>Référence : <code>${reference}</code></li>
+        <li>Référence : <code>${safeReference}</code></li>
       </ul>
     </div>
     <p>Connectez-vous au panneau d'administration pour vérifier et valider la transaction si nécessaire.</p>
@@ -364,9 +379,11 @@ export async function sendPasswordResetEmail({
   resetUrl: string;
 }): Promise<boolean> {
   const title = 'Réinitialisation de votre mot de passe';
+  const safeUserName = escapeHtml(userName || 'Cher Utilisateur');
+  const safeUserEmail = escapeHtml(userEmail);
   const contentHtml = `
-    <h2 style="color: #1e293b; font-size: 18px; margin-top: 0;">Bonjour ${userName || 'Cher Utilisateur'},</h2>
-    <p>Nous avons reçu une demande de réinitialisation de mot de passe pour votre compte MyCV Builder associé à l'adresse e-mail : <strong>${userEmail}</strong>.</p>
+    <h2 style="color: #1e293b; font-size: 18px; margin-top: 0;">Bonjour ${safeUserName},</h2>
+    <p>Nous avons reçu une demande de réinitialisation de mot de passe pour votre compte MyCV Builder associé à l'adresse e-mail : <strong>${safeUserEmail}</strong>.</p>
     <p>Pour choisir un nouveau mot de passe sécurisé, veuillez cliquer sur le bouton ci-dessous :</p>
     <div style="background-color: #f8fafc; border-radius: 12px; padding: 16px; margin: 20px 0; border: 1px solid #e2e8f0; font-size: 13px; color: #64748b;">
       <p style="margin: 0;">⏰ <strong>Attention :</strong> Ce lien est à usage unique et expirera dans <strong>1 heure</strong> pour des raisons de sécurité.</p>
